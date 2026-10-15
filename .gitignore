@@ -1,0 +1,97 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ===== Virtual Environments =====
+.venv/
+venv/
+ENV/
+env/
+.env/
+.python-version
+
+# ===== Flask / Web =====
+instance/
+.webassets-cache
+*.log
+
+# ===== Environment Variables =====
+.env
+.env.*
+!.env.example
+*.env
+
+# ===== Data / Database =====
+# Ignore local data files (adjust if you need to commit seed data)
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# ===== IDE / Editor =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# ===== OS =====
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ===== Testing / Coverage =====
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ===== Logs =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== Static (uploaded/generated files) =====
+# Keep static/ source files but ignore uploads — adjust to your needs
+static/uploads/
+static/generated/
+
+# ===== Backups =====
+*.bak
+*.backup
+*.tmp
+*.temp
