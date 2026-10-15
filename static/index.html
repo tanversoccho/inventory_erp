@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Soccho • Inventory & Sales</title><link rel="stylesheet" href="/style.css"></head><body>
+<div id="login" class="login"><form id="loginForm" class="panel"><div class="logo">S<span>soccho</span></div><h1>Your stock.<br>Your business, clearer.</h1><p>Sign in to your inventory workspace.</p><label>Password<input id="password" type="password" required autocomplete="current-password"></label><button>Open workspace →</button><p id="loginError" role="alert"></p></form></div>
+<div id="workspace" hidden><aside><div class="logo">S<span>soccho</span></div><small>BUSINESS WORKSPACE</small><nav><button data-page="dashboard" class="active">◫ &nbsp; Overview</button><button data-page="inventory">▦ &nbsp; Inventory</button><button data-page="purchase">↓ &nbsp; Purchase stock</button><button data-page="sale">↗ &nbsp; New sale</button><button data-page="history">◷ &nbsp; Transactions</button></nav><div class="aside-bottom"><p>● &nbsp; SQLite · Laptop database</p><button id="backup">↓ Download backup</button><button id="logout">Sign out</button></div></aside>
+<main><header><div><small>YOUR BUSINESS AT A GLANCE</small><h1 id="pageTitle">Overview</h1></div><div id="today"></div></header><div id="notice" role="status" hidden></div>
+<section id="dashboard" class="page"><div class="hero"><div><small>KEEP BUSINESS MOVING</small><h2>A clearer view of<br>every product.</h2><p>Track what comes in. Know what goes out.</p><button data-go="sale">Create a sale ↗</button></div><div class="hero-art"><span>▥</span><p>SCAN. STOCK. SELL.</p></div></div><div id="metrics" class="metrics"></div><div class="grid"><article class="panel"><div class="section-head"><h2>Recent activity</h2><button data-go="history" class="text">View all →</button></div><div id="recent"></div></article><article class="panel"><h2>Stock watch</h2><p class="muted">Products at or below their reorder level</p><div id="alerts"></div></article></div><p class="muted">All-time totals · BDT · Gross profit uses weighted-average purchase cost; excludes overhead, taxes and other expenses.</p></section>
+<section id="inventory" class="page" hidden><div class="toolbar"><input id="search" placeholder="Search product name, code or category"><button id="addProduct">+ Add product</button></div><article class="panel"><div class="table-wrap"><table><thead><tr><th>Product / code</th><th>Category</th><th>Stock</th><th>Avg. cost</th><th>Sell price</th><th>Status</th></tr></thead><tbody id="products"></tbody></table></div></article></section>
+<section id="purchase" class="page" hidden></section><section id="sale" class="page" hidden></section>
+<section id="history" class="page" hidden><div class="toolbar"><p>Complete purchase and sales ledger</p><button id="export">Export CSV ↓</button></div><article class="panel"><div class="table-wrap"><table><thead><tr><th>Date / reference</th><th>Type</th><th>Product</th><th>Quantity</th><th>Unit price</th><th>Total</th></tr></thead><tbody id="ledger"></tbody></table></div></article></section>
+<footer>Soccho ERP <span>Inventory & sales · Local-first</span></footer></main></div>
+<dialog id="productDialog"><form id="productForm"><div class="section-head"><h2>Add product</h2><button type="button" class="text" id="closeProduct">✕</button></div><label>Barcode / QR value (optional)<div class="inline"><input name="code" id="productCode" placeholder="Leave blank for manual entry" maxlength="200"><button type="button" id="scanProduct">Photo scan</button></div></label><button type="button" id="onlineLookup">Look up product online</button><p id="productLookup" class="muted" role="status"></p><label>Product name<input id="productName" name="name" required maxlength="200"></label><label>Category<input name="category" maxlength="100"></label><div class="two"><label>Selling price (BDT)<input name="price" type="number" min="0" step="0.01" required></label><label>Low-stock level<input name="minimum" type="number" min="0" step="1" value="5" required></label></div><div class="two"><label>Starting quantity<input name="quantity" type="number" min="0" step="1" value="0" required></label><label>Unit purchase cost (BDT)<input name="cost" type="number" min="0" step="0.01" value="0" required></label></div><p class="muted">A barcode is optional. Starting stock is recorded as a purchase.</p><button>Save product</button></form></dialog>
+<dialog id="scanDialog" class="crop-dialog" aria-labelledby="cropTitle">
+ <div class="section-head"><div><small>PHOTO → CROP → SCAN</small><h2 id="cropTitle">Scan a product code</h2></div><button type="button" id="closeScan">✕ Close</button></div>
+ <p class="crop-help">Capture one label. Drag around the barcode or QR code, leaving a little clear space on every side.</p>
+ <button type="button" id="takePhoto">Take photo / Retake</button>
+ <input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
+ <p id="scanMessage" role="status" aria-live="polite"></p>
+ <div id="cropEditor" hidden>
+  <canvas id="cropCanvas" aria-label="Photo crop selector. Drag to select, or use the edge sliders below."></canvas>
+  <div class="crop-sliders">
+   <label>Left edge <output id="leftValue"></output><input id="cropLeft" type="range" min="0" max="1000" value="0"></label>
+   <label>Right edge <output id="rightValue"></output><input id="cropRight" type="range" min="0" max="1000" value="1000"></label>
+   <label>Top edge <output id="topValue"></output><input id="cropTop" type="range" min="0" max="1000" value="0"></label>
+   <label>Bottom edge <output id="bottomValue"></output><input id="cropBottom" type="range" min="0" max="1000" value="1000"></label>
+  </div>
+  <div class="crop-actions"><button type="button" id="resetCrop">Reset crop</button><button type="button" id="previewCrop">Preview crop</button><button type="button" id="decodeCrop">Scan barcode</button></div>
+  <section id="cropPreviewArea" hidden><h3>Selected crop</h3><canvas id="cropPreview"></canvas><p id="cropResolution"></p></section>
+ </div>
+ <p id="scanResult" hidden></p><button type="button" id="useScanResult" hidden>Use decoded value →</button>
+ <div id="reader" hidden aria-hidden="true"></div>
+</dialog>
+<script src="/scanner.min.js"></script><script src="/app.js"></script></body></html>
