@@ -1,0 +1,18 @@
+{
+  "name": "inventory_erp",
+  "version": "1.0.0",
+  "description": "A working local web application. One laptop runs a Python server and keeps a real SQLite database. Laptop and phone browsers share the same records. No cloud account or paid database required. This is an inventory and sales MVP, not a full accounting/payroll ERP.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0"
+  }
+}
