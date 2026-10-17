@@ -1,9 +1,11 @@
 """Read-only online catalog lookup. Only barcode strings leave the laptop."""
 
-import json, re, time
-from urllib.request import Request, urlopen
+import json
+import re
+import time
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
+from urllib.request import Request, urlopen
 
 _CACHE = {}
 
@@ -58,9 +60,7 @@ def online_lookup(code):
     except (URLError, TimeoutError, ValueError, OSError):
         errors.append("Open Food Facts unavailable")
     try:
-        data = read_json(
-            "https://api.upcitemdb.com/prod/trial/lookup?upc=" + quote(code)
-        )
+        data = read_json("https://api.upcitemdb.com/prod/trial/lookup?upc=" + quote(code))
         items = data.get("items") or []
         if items and items[0].get("title"):
             item = items[0]

@@ -1,4 +1,7 @@
-import getpass, hashlib, secrets
+import getpass
+import hashlib
+import secrets
+
 from server import connect, initialize
 
 initialize()
@@ -7,10 +10,10 @@ if len(p) < 8:
     raise SystemExit("Password too short")
 salt = secrets.token_hex(16)
 value = (
-    salt
-    + ":"
-    + hashlib.scrypt(p.encode(), salt=bytes.fromhex(salt), n=16384, r=8, p=1).hex()
-)
+        salt
+        + ":"
+        + hashlib.scrypt(p.encode(), salt=bytes.fromhex(salt), n=16384, r=8, p=1).hex()
+        )
 with connect() as c:
     c.execute("INSERT OR REPLACE INTO settings VALUES('password',?)", (value,))
 print("Password reset. Restart the server.")

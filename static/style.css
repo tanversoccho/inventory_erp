@@ -3,24 +3,27 @@
   --muted: #778681;
   --line: #e1e8e2;
   --green: #255c4b;
-  --bg: #f5f7f2
+  --bg: #f5f7f2;
 }
 
 * {
-  box-sizing: border-box
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   background: var(--bg);
-  font: 14px 'Segoe UI', Arial, sans-serif;
-  color: var(--ink)
+  font:
+    14px "Segoe UI",
+    Arial,
+    sans-serif;
+  color: var(--ink);
 }
 
 button,
 input,
 select {
-  font: inherit
+  font: inherit;
 }
 
 button {
@@ -30,16 +33,16 @@ button {
   background: var(--green);
   color: white;
   padding: 12px 18px;
-  font-weight: 600
+  font-weight: 600;
 }
 
 button:hover {
-  filter: brightness(1.1)
+  filter: brightness(1.1);
 }
 
 button:disabled {
-  opacity: .5;
-  cursor: wait
+  opacity: 0.5;
+  cursor: wait;
 }
 
 input,
@@ -49,43 +52,43 @@ select {
   border: 1px solid #d4dfd7;
   border-radius: 7px;
   background: white;
-  color: var(--ink)
+  color: var(--ink);
 }
 
 label {
   display: block;
   font-size: 12px;
   font-weight: 600;
-  margin: 16px 0
+  margin: 16px 0;
 }
 
 label input,
 label select {
-  margin-top: 7px
+  margin-top: 7px;
 }
 
 h1,
 h2,
 p {
-  margin-top: 0
+  margin-top: 0;
 }
 
 h1 {
   font-size: 32px;
   font-weight: 600;
   letter-spacing: -1px;
-  margin-bottom: 0
+  margin-bottom: 0;
 }
 
 h2 {
   font-size: 18px;
-  font-weight: 600
+  font-weight: 600;
 }
 
 small {
   font-size: 10px;
   letter-spacing: 1.5px;
-  color: var(--muted)
+  color: var(--muted);
 }
 
 aside {
@@ -96,7 +99,7 @@ aside {
   padding: 32px 22px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--line)
+  border-right: 1px solid var(--line);
 }
 
 .logo {
@@ -105,21 +108,21 @@ aside {
   gap: 12px;
   font-size: 24px;
   font-weight: 700;
-  margin-bottom: 48px
+  margin-bottom: 48px;
 }
 
 .logo:first-letter {
-  color: var(--green)
+  color: var(--green);
 }
 
 .logo span {
-  letter-spacing: -1px
+  letter-spacing: -1px;
 }
 
 nav {
   margin-top: 22px;
   display: grid;
-  gap: 8px
+  gap: 8px;
 }
 
 nav button {
@@ -127,18 +130,18 @@ nav button {
   background: transparent;
   color: #71817a;
   font-size: 13px;
-  padding: 14px
+  padding: 14px;
 }
 
 nav button.active {
   background: #eaf0e9;
-  color: var(--green)
+  color: var(--green);
 }
 
 .aside-bottom {
   margin-top: auto;
   font-size: 10px;
-  color: var(--muted)
+  color: var(--muted);
 }
 
 .aside-bottom button {
@@ -146,30 +149,30 @@ nav button.active {
   margin-top: 8px;
   background: #f1f5ef;
   color: var(--green);
-  font-size: 12px
+  font-size: 12px;
 }
 
 main {
   margin-left: 235px;
   padding: 36px 42px;
-  max-width: 1700px
+  max-width: 1700px;
 }
 
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 30px
+  margin-bottom: 30px;
 }
 
 header small {
   display: block;
-  margin-bottom: 10px
+  margin-bottom: 10px;
 }
 
 #today {
   font-size: 12px;
-  color: var(--muted)
+  color: var(--muted);
 }
 
 .hero {
@@ -180,52 +183,52 @@ header small {
   justify-content: space-between;
   align-items: center;
   color: #fff;
-  margin-bottom: 25px
+  margin-bottom: 25px;
 }
 
 .hero small {
-  color: #b4c8b0
+  color: #b4c8b0;
 }
 
 .hero h2 {
   font-size: 32px;
   letter-spacing: -1px;
   line-height: 1.2;
-  margin: 16px 0
+  margin: 16px 0;
 }
 
 .hero p {
   font-size: 13px;
-  color: #c1d1c5
+  color: #c1d1c5;
 }
 
 .hero button {
   background: #dce6a5;
   color: #254333;
-  margin-top: 5px
+  margin-top: 5px;
 }
 
 .hero-art {
   text-align: center;
   margin-right: 25px;
-  color: #c8d694
+  color: #c8d694;
 }
 
 .hero-art span {
   font-size: 100px;
-  line-height: 1.1
+  line-height: 1.1;
 }
 
 .hero-art p {
   font-size: 10px;
-  letter-spacing: 3px
+  letter-spacing: 3px;
 }
 
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  margin-bottom: 25px
+  margin-bottom: 25px;
 }
 
 .metric,
@@ -233,32 +236,32 @@ header small {
   background: white;
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 24px
+  padding: 24px;
 }
 
 .metric small {
   letter-spacing: 0;
-  font-size: 12px
+  font-size: 12px;
 }
 
 .metric strong {
   display: block;
   font-size: 27px;
   letter-spacing: -1px;
-  margin: 14px 0 8px
+  margin: 14px 0 8px;
 }
 
 .metric p {
   font-size: 11px;
   color: var(--muted);
-  margin: 0
+  margin: 0;
 }
 
 .grid {
   display: grid;
   grid-template-columns: 1.5fr 1fr;
   gap: 22px;
-  margin-bottom: 20px
+  margin-bottom: 20px;
 }
 
 .section-head,
@@ -267,39 +270,39 @@ header small {
   align-items: center;
   justify-content: space-between;
   gap: 15px;
-  margin-bottom: 18px
+  margin-bottom: 18px;
 }
 
 .section-head h2 {
-  margin: 0
+  margin: 0;
 }
 
 .text {
   background: transparent;
   color: var(--green);
   padding: 5px;
-  font-size: 12px
+  font-size: 12px;
 }
 
 .muted {
   color: var(--muted);
   font-size: 12px;
-  line-height: 1.6
+  line-height: 1.6;
 }
 
 .toolbar input {
-  max-width: 420px
+  max-width: 420px;
 }
 
 .table-wrap {
-  overflow-x: auto
+  overflow-x: auto;
 }
 
 table {
   border-collapse: collapse;
   width: 100%;
   text-align: left;
-  white-space: nowrap
+  white-space: nowrap;
 }
 
 th {
@@ -307,21 +310,21 @@ th {
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 600;
-  letter-spacing: .7px;
+  letter-spacing: 0.7px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--line)
+  border-bottom: 1px solid var(--line);
 }
 
 td {
   font-size: 12px;
   padding: 17px 14px;
-  border-bottom: 1px solid #edf1eb
+  border-bottom: 1px solid #edf1eb;
 }
 
 td small {
   display: block;
   letter-spacing: 0;
-  margin-top: 5px
+  margin-top: 5px;
 }
 
 .badge {
@@ -330,12 +333,12 @@ td small {
   background: #edf4e8;
   color: #41644b;
   padding: 5px 8px;
-  font-size: 10px
+  font-size: 10px;
 }
 
 .badge.low {
   background: #fff1df;
-  color: #a0782c
+  color: #a0782c;
 }
 
 .activity {
@@ -344,56 +347,56 @@ td small {
   gap: 12px;
   padding: 16px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 12px
+  font-size: 12px;
 }
 
 .activity small {
   display: block;
   letter-spacing: 0;
-  margin-top: 6px
+  margin-top: 6px;
 }
 
 .empty {
   padding: 30px 0;
   color: var(--muted);
-  font-size: 13px
+  font-size: 13px;
 }
 
 .two {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px
+  gap: 15px;
 }
 
 .inline {
   display: flex;
   gap: 8px;
-  align-items: center
+  align-items: center;
 }
 
 .inline input {
-  min-width: 0
+  min-width: 0;
 }
 
 .transaction-grid {
   display: grid;
   grid-template-columns: 1fr 1.3fr;
-  gap: 22px
+  gap: 22px;
 }
 
 .total {
   font-size: 26px;
   font-weight: 600;
-  margin: 24px 0
+  margin: 24px 0;
 }
 
 .cart-row {
   padding: 16px 0;
-  border-bottom: 1px solid var(--line)
+  border-bottom: 1px solid var(--line);
 }
 
 .cart-row .two {
-  margin-top: 10px
+  margin-top: 10px;
 }
 
 footer {
@@ -403,7 +406,7 @@ footer {
   font-size: 11px;
   color: var(--muted);
   padding-top: 20px;
-  border-top: 1px solid var(--line)
+  border-top: 1px solid var(--line);
 }
 
 dialog {
@@ -413,181 +416,181 @@ dialog {
   width: min(520px, 95vw);
   max-height: 90vh;
   overflow: auto;
-  color: var(--ink)
+  color: var(--ink);
 }
 
 dialog::backdrop {
-  background: #163c366b
+  background: #163c366b;
 }
 
 #notice {
   background: #e2ecd9;
   padding: 14px;
   border-radius: 8px;
-  margin-bottom: 20px
+  margin-bottom: 20px;
 }
 
 #notice.error {
   background: #ffe6dd;
-  color: #9b3924
+  color: #9b3924;
 }
 
 .login {
   display: grid;
   place-items: center;
   min-height: 100vh;
-  padding: 20px
+  padding: 20px;
 }
 
 .login .panel {
   max-width: 440px;
   width: 100%;
-  padding: 40px
+  padding: 40px;
 }
 
 .login .logo {
-  margin-bottom: 30px
+  margin-bottom: 30px;
 }
 
 .login p {
   margin-top: 20px;
-  color: var(--muted)
+  color: var(--muted);
 }
 
 .login h1 {
-  line-height: 1.2
+  line-height: 1.2;
 }
 
 .login button {
-  width: 100%
+  width: 100%;
 }
 
 [hidden] {
-  display: none !important
+  display: none !important;
 }
 
-@media(max-width:1050px) {
+@media (max-width: 1050px) {
   main {
     padding: 28px 22px;
-    margin-left: 200px
+    margin-left: 200px;
   }
 
   aside {
-    width: 200px
+    width: 200px;
   }
 
   .metrics {
-    grid-template-columns: repeat(2, 1fr)
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .grid,
   .transaction-grid {
-    grid-template-columns: 1fr
+    grid-template-columns: 1fr;
   }
 }
 
-@media(max-width:650px) {
+@media (max-width: 650px) {
   aside {
     position: static;
     width: 100%;
     height: auto;
-    padding: 18px
+    padding: 18px;
   }
 
   .logo {
     margin-bottom: 15px;
-    font-size: 22px
+    font-size: 22px;
   }
 
-  aside>small,
+  aside > small,
   .aside-bottom p {
-    display: none
+    display: none;
   }
 
   nav {
     display: flex;
     overflow-x: auto;
     margin-top: 0;
-    gap: 5px
+    gap: 5px;
   }
 
   nav button {
     white-space: nowrap;
     padding: 10px;
-    font-size: 11px
+    font-size: 11px;
   }
 
   .aside-bottom {
     display: flex;
-    gap: 8px
+    gap: 8px;
   }
 
   .aside-bottom button {
     width: auto;
-    padding: 8px
+    padding: 8px;
   }
 
   .hero {
-    padding: 24px
+    padding: 24px;
   }
 
   .hero h2 {
-    font-size: 27px
+    font-size: 27px;
   }
 
   .hero-art {
-    display: none
+    display: none;
   }
 
   main {
     margin: 0;
-    padding: 24px 16px
+    padding: 24px 16px;
   }
 
   header {
-    align-items: flex-start
+    align-items: flex-start;
   }
 
   header h1 {
-    font-size: 26px
+    font-size: 26px;
   }
 
   #today {
     max-width: 95px;
     text-align: right;
-    line-height: 1.5
+    line-height: 1.5;
   }
 
   .metrics {
-    gap: 10px
+    gap: 10px;
   }
 
   .metric {
-    padding: 17px
+    padding: 17px;
   }
 
   .metric strong {
-    font-size: 22px
+    font-size: 22px;
   }
 
   .panel {
-    padding: 18px
+    padding: 18px;
   }
 
   .two {
-    gap: 10px
+    gap: 10px;
   }
 
   .toolbar {
-    align-items: stretch
+    align-items: stretch;
   }
 
   .toolbar button {
-    white-space: nowrap
+    white-space: nowrap;
   }
 
   footer span {
-    display: none
+    display: none;
   }
 }
 
@@ -599,9 +602,9 @@ dialog::backdrop {
   --crop-muted: #a3b4c8;
   --crop-accent: #86efce;
   --crop-border: #39475c;
-  --crop-shade: rgba(0, 0, 0, .66);
+  --crop-shade: rgba(0, 0, 0, 0.66);
   --crop-error: #ffacac;
-  --crop-success: #86efce
+  --crop-success: #86efce;
 }
 
 .crop-dialog {
@@ -609,45 +612,45 @@ dialog::backdrop {
   background: var(--crop-bg);
   color: var(--crop-fg);
   border-color: var(--crop-border);
-  padding: 24px
+  padding: 24px;
 }
 
 .crop-dialog small,
 .crop-dialog .crop-help,
 .crop-dialog #cropResolution {
-  color: var(--crop-muted)
+  color: var(--crop-muted);
 }
 
 .crop-dialog h2 {
-  margin-top: 8px
+  margin-top: 8px;
 }
 
 .crop-dialog button {
   background: var(--crop-surface);
   color: var(--crop-fg);
-  border: 1px solid var(--crop-border)
+  border: 1px solid var(--crop-border);
 }
 
 .crop-dialog #takePhoto,
 .crop-dialog #decodeCrop,
 .crop-dialog #useScanResult {
   background: var(--crop-accent);
-  color: var(--crop-bg)
+  color: var(--crop-bg);
 }
 
 .crop-dialog #scanMessage {
   min-height: 22px;
   margin: 16px 0;
   line-height: 1.5;
-  overflow-wrap: anywhere
+  overflow-wrap: anywhere;
 }
 
 .crop-dialog #scanMessage[data-state="error"] {
-  color: var(--crop-error)
+  color: var(--crop-error);
 }
 
 .crop-dialog #scanMessage[data-state="success"] {
-  color: var(--crop-success)
+  color: var(--crop-success);
 }
 
 #cropCanvas {
@@ -657,74 +660,74 @@ dialog::backdrop {
   touch-action: none;
   border-radius: 8px;
   cursor: crosshair;
-  border: 1px solid var(--crop-border)
+  border: 1px solid var(--crop-border);
 }
 
 .crop-sliders {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0 20px
+  gap: 0 20px;
 }
 
 .crop-sliders label {
   color: var(--crop-fg);
-  font-size: 13px
+  font-size: 13px;
 }
 
 .crop-sliders output {
   float: right;
-  color: var(--crop-muted)
+  color: var(--crop-muted);
 }
 
 .crop-sliders input {
   accent-color: var(--crop-accent);
   padding: 0;
   background: transparent;
-  min-height: 30px
+  min-height: 30px;
 }
 
 .crop-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin: 16px 0
+  margin: 16px 0;
 }
 
 #cropPreviewArea {
   padding: 16px;
   background: var(--crop-surface);
   border: 1px solid var(--crop-border);
-  border-radius: 8px
+  border-radius: 8px;
 }
 
 #cropPreview {
   display: block;
   max-width: 100%;
   height: auto;
-  background: white
+  background: white;
 }
 
 #scanResult {
   overflow-wrap: anywhere;
   border-left: 3px solid var(--crop-accent);
-  padding: 12px
+  padding: 12px;
 }
 
 #reader {
-  display: none !important
+  display: none !important;
 }
 
-@media(max-width:550px) {
+@media (max-width: 550px) {
   .crop-dialog {
-    padding: 18px
+    padding: 18px;
   }
 
   .crop-actions button {
     flex: 1;
-    min-width: 120px
+    min-width: 120px;
   }
 
   .crop-sliders {
-    gap: 0 14px
+    gap: 0 14px;
   }
 }

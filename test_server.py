@@ -1,5 +1,7 @@
-import tempfile, unittest
+import tempfile
+import unittest
 from pathlib import Path
+
 import server
 
 
@@ -55,9 +57,7 @@ class InventoryTests(unittest.TestCase):
             )
         self.assertEqual(self.product()["stock"], 5)
         with server.connect() as c:
-            self.assertEqual(
-                c.execute("SELECT count(*) FROM movements").fetchone()[0], 1
-            )
+            self.assertEqual(c.execute("SELECT count(*) FROM movements").fetchone()[0], 1)
 
     def test_invalid_inputs(self):
         for q in [0, -1, 1.5, "NaN"]:
@@ -76,18 +76,14 @@ class InventoryTests(unittest.TestCase):
             p = c.execute("SELECT * FROM products WHERE name='Manual mug'").fetchone()
             self.assertEqual(p["stock"], 5)
             self.assertEqual(p["cost"], 8000)
-            m = c.execute(
-                "SELECT * FROM movements WHERE product_id=?", (p["id"],)
-            ).fetchone()
+            m = c.execute("SELECT * FROM movements WHERE product_id=?", (p["id"],)).fetchone()
             self.assertEqual(m["quantity"] * m["unit_price"], 40000)
 
     def test_duplicate_code_keeps_stock(self):
         import sqlite3
 
         with self.assertRaises(sqlite3.IntegrityError):
-            server.create_product(
-                {"name": "Duplicate", "code": "001", "quantity": 9, "cost": 10}
-            )
+            server.create_product({"name": "Duplicate", "code": "001", "quantity": 9, "cost": 10})
         self.assertEqual(self.product()["stock"], 0)
 
     def test_rounding(self):

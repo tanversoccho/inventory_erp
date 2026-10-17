@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch
+
 import product_lookup as lookup
 
 
@@ -41,16 +42,12 @@ class LookupTests(unittest.TestCase):
             self.assertEqual(r["category"], "Mugs")
 
     def test_unknown(self):
-        with patch.object(
-            lookup, "read_json", side_effect=[{"status": 0}, {"items": []}]
-        ):
+        with patch.object(lookup, "read_json", side_effect=[{"status": 0}, {"items": []}]):
             self.assertFalse(lookup.online_lookup("123456789012")["found"])
 
     def test_timeout(self):
         with patch.object(lookup, "read_json", side_effect=TimeoutError):
-            self.assertIn(
-                "unavailable", lookup.online_lookup("123456789012")["message"]
-            )
+            self.assertIn("unavailable", lookup.online_lookup("123456789012")["message"])
 
     def test_qr_url_not_fetched(self):
         with patch.object(lookup, "read_json") as request:

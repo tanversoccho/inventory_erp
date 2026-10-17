@@ -1,8 +1,16 @@
-import argparse, datetime, hashlib, hmac, io, json, os, secrets, socket, sqlite3, ssl
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
-from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+import argparse
+import datetime
+import hashlib
+import hmac
+import json
+import secrets
+import sqlite3
+import ssl
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
+
 from product_lookup import online_lookup
 
 ROOT = Path(__file__).resolve().parent
@@ -29,9 +37,9 @@ def initialize():
 def money(v):
     try:
         d = Decimal(str(v))
-        if not d.is_finite() or d < 0 or d > Decimal("1000000000"):
+        if not d.is_finite() or d < 0 or d > Decimal(1000000000):
             raise ValueError("Invalid price")
-        return int((d * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+        return int((d * 100).quantize(Decimal(1), rounding=ROUND_HALF_UP))
     except InvalidOperation:
         raise ValueError("Invalid price")
 
@@ -67,7 +75,7 @@ def transaction(data):
                 total = p["stock"] + q
                 cost = int(
                     (Decimal(p["stock"] * cost + q * price) / total).quantize(
-                        Decimal("1"), rounding=ROUND_HALF_UP
+                        Decimal(1), rounding=ROUND_HALF_UP
                     )
                 )
                 c.execute(
@@ -135,10 +143,7 @@ class Handler(BaseHTTPRequestHandler):
 
         try:
             cookie = SimpleCookie(self.headers.get("Cookie", ""))
-            return (
-                cookie.get("session") is not None
-                and cookie["session"].value in SESSIONS
-            )
+            return cookie.get("session") is not None and cookie["session"].value in SESSIONS
         except Exception:
             return False
 
@@ -152,10 +157,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200, online_lookup(code))
             with connect() as c:
                 if path == "/api/state":
-                    products = [
-                        dict(r)
-                        for r in c.execute("SELECT * FROM products ORDER BY name")
-                    ]
+                    products = [dict(r) for r in c.execute("SELECT * FROM products ORDER BY name")]
                     history = [
                         dict(r)
                         for r in c.execute(
@@ -163,19 +165,13 @@ class Handler(BaseHTTPRequestHandler):
                         )
                     ]
                     purchase = sum(
-                        r["quantity"] * r["unit_price"]
-                        for r in history
-                        if r["kind"] == "purchase"
+                        r["quantity"] * r["unit_price"] for r in history if r["kind"] == "purchase"
                     )
                     sales = sum(
-                        r["quantity"] * r["unit_price"]
-                        for r in history
-                        if r["kind"] == "sale"
+                        r["quantity"] * r["unit_price"] for r in history if r["kind"] == "sale"
                     )
                     cogs = sum(
-                        r["quantity"] * r["unit_cost"]
-                        for r in history
-                        if r["kind"] == "sale"
+                        r["quantity"] * r["unit_cost"] for r in history if r["kind"] == "sale"
                     )
                     return self.reply(
                         200,
@@ -244,9 +240,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header(
                     "Set-Cookie",
                     f"session={token}; HttpOnly; SameSite=Strict; Path=/"
-                    + (
-                        "; Secure" if isinstance(self.connection, ssl.SSLSocket) else ""
-                    ),
+                    + ("; Secure" if isinstance(self.connection, ssl.SSLSocket) else ""),
                 )
                 self.send_header("Content-Length", "2")
                 self.end_headers()
@@ -266,9 +260,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(201, create_product(data))
             return self.reply(404, {"error": "Not found"})
         except sqlite3.IntegrityError:
-            return self.reply(
-                400, {"error": "Product code already exists or record is invalid"}
-            )
+            return self.reply(400, {"error": "Product code already exists or record is invalid"})
         except (ValueError, KeyError, TypeError, InvalidOperation) as e:
             return self.reply(400, {"error": str(e)})
         except Exception:
@@ -289,13 +281,9 @@ if __name__ == "__main__":
         if not c.execute("SELECT 1 FROM settings WHERE key='password'").fetchone():
             import getpass
 
-            password = getpass.getpass(
-                "Create your ERP password (at least 8 characters): "
-            )
+            password = getpass.getpass("Create your ERP password (at least 8 characters): ")
             if len(password) < 8:
-                raise SystemExit(
-                    "Password must contain at least 8 characters. Run again."
-                )
+                raise SystemExit("Password must contain at least 8 characters. Run again.")
             salt = secrets.token_hex(16)
             value = (
                 salt
