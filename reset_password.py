@@ -2,7 +2,15 @@ import getpass
 import hashlib
 import secrets
 
+import argparse
+from pathlib import Path
+import server
 from server import connect, initialize
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--db", type=Path, default=server.DB)
+args = parser.parse_args()
+server.DB = args.db.resolve()
 
 initialize()
 p = getpass.getpass("New password (at least 8 characters): ")

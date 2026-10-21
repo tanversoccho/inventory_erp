@@ -4,7 +4,8 @@
   "description": "A working local web application. One laptop runs a Python server and keeps a real SQLite database. Laptop and phone browsers share the same records. No cloud account or paid database required. This is an inventory and sales MVP, not a full accounting/payroll ERP.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint static/app.js static/upgrade.js",
+    "test": "python -m unittest discover -v"
   },
   "keywords": [],
   "author": "",

@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Inventory & Sales</title>
     <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/upgrade.css">
+    <meta name="description" content="Inventory workspace">
+    <link id="brandFavicon" rel="icon" href="data:,">
   </head>
   <body> 
     <div id="login" class="login">
       <form id="loginForm" class="panel">
-        <div class="logo">S<span>soccho</span></div>
-        <h1>Your stock.<br>Your business, clearer.</h1>
+        <div class="logo" data-brand="login"></div>
+        <h1 id="brandWelcome">Inventory workspace</h1>
         <p>Sign in to your inventory workspace.</p> 
         <label>Password<input id="password" type="password" required autocomplete="current-password"></label>
         <button>Open workspace →</button> 
@@ -19,15 +22,18 @@
     </div> 
     <div id="workspace" hidden>
       <aside>
-        <div class="logo">S<span>soccho</span> </div>
+        <div class="logo" data-brand="navigation"></div>
         <small>BUSINESS WORKSPACE</small>
+        <button type="button" id="toggleNav" aria-label="Toggle navigation">☰ Menu</button>
         <nav>
           <button data-page="dashboard" class="active">◫ &nbsp; Overview</button>
           <button data-page="inventory">▦ &nbsp; Inventory</button>
           <button data-page="purchase">↓ &nbsp; Purchase stock</button>
           <button data-page="sale">↗ &nbsp; New sale</button>
           <button data-page="history">◷ &nbsp; Transactions</button>
-        </nav>
+        <button data-page="reports">Reports & analytics</button>
+          <button data-page="expenses">Expenses</button><button data-page="suppliers">Suppliers</button>
+          <button data-page="settings">Settings</button></nav>
         <div class="aside-bottom">
           <p>● &nbsp; SQLite · Laptop database</p>
           <button id="backup">↓ Download backup</button>
@@ -71,7 +77,7 @@
               <div id="alerts"></div>
             </article>
           </div>
-          <p class="muted">All-time totals · BDT · Gross profit uses weighted-average purchase cost; excludes overhead, taxes and other expenses.</p>
+          <p class="muted">Overview: all-time totals. Reports: monthly and custom periods. Gross profit excludes operating expenses and taxes.</p>
         </section>
         <section id="inventory" class="page" hidden>
           <div class="toolbar">
@@ -88,7 +94,7 @@
                     <th>Stock</th>
                     <th>Avg. cost</th>
                     <th>Sell price</th>
-                    <th>Status</th>
+                    <th>Status / actions</th>
                   </tr>
                 </thead>
                 <tbody id="products">
@@ -97,6 +103,9 @@
             </div>
           </article>
         </section> 
+        <section id="reports" class="page" hidden></section>
+        <section id="expenses" class="page" hidden></section><section id="suppliers" class="page" hidden></section>
+        <section id="settings" class="page" hidden></section>
         <section id="purchase" class="page" hidden></section>
         <section id="sale" class="page" hidden></section> 
         <section id="history" class="page" hidden>
@@ -122,7 +131,7 @@
             </div>
           </article>
         </section> 
-        <footer>Soccho ERP <span>Inventory & sales · Local-first</span></footer>
+        <footer><b id="brandFooter"></b><span id="brandSubtitle"></span></footer>
       </main>
     </div> 
     <dialog id="productDialog">
@@ -150,7 +159,7 @@
           <label>Unit purchase cost (BDT)<input name="cost" type="number" min="0" step="0.01" value="0" required></label>
         </div>
         <p class="muted">A barcode is optional. Starting stock is recorded as a purchase.</p>
-        <button>Save product</button>
+        <button type="submit" id="saveProduct">Save product</button>
       </form>
     </dialog> 
     <dialog id="scanDialog" class="crop-dialog" aria-labelledby="cropTitle"> 
@@ -201,6 +210,8 @@
       <div id="reader" hidden aria-hidden="true"></div> 
     </dialog> 
     <script src="/scanner.min.js"></script>
+    <script src="/upgrade.js"></script>
     <script src="/app.js"></script>
+  <dialog id="adminDialog"><div id="adminDialogContent"></div><button type="button" id="closeAdmin">Close</button></dialog>
   </body>
 </html>

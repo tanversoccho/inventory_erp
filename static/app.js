@@ -5,13 +5,14 @@ const $ = (s) => document.querySelector(s),
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
     );
 let scanBusy = false;
+let transactionBusy = false;
+let productBusy = false;
 let state,
   page = 'dashboard',
   carts = { purchase: [], sale: [] },
   scanner,
   scanTarget;
-const cash = (n) =>
-  '৳' + (n / 100).toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const cash = (n) => window.erp ? window.erp.money(n) : (n / 100).toFixed(2);
 async function api(path, data) {
   const r = await fetch(
     '/api/' + path,
@@ -34,9 +35,11 @@ function notice(msg, error = false) {
 }
 async function refresh() {
   state = await api('state');
+  if (window.erp) await window.erp.load();
   $('#login').hidden = true;
   $('#workspace').hidden = false;
   render();
+  if (window.erp) window.erp.afterRender(state, page);
 }
 function go(p) {
   page = p;
@@ -50,8 +53,10 @@ function go(p) {
     purchase: 'Purchase stock',
     sale: 'New sale',
     history: 'Transactions',
+    reports: 'Reports & analytics', expenses: 'Expenses', suppliers: 'Suppliers', settings: 'Settings',
   }[p];
   render();
+  if (window.erp) window.erp.afterRender(state, page);
 }
 function activity(rows) {
   return rows.length
@@ -66,8 +71,8 @@ function activity(rows) {
 function render() {
   const t = state.totals;
   $('#metrics').innerHTML = [
-    ['Total purchases', t.purchases, 'All stock purchased'],
-    ['Sales revenue', t.sales, 'All completed sales'],
+    ['Net purchase spending', t.purchases, 'Purchases less supplier returns'],
+    ['Sales revenue', t.sales, 'Sales less recorded customer returns'],
     ['Gross profit', t.profit, 'Revenue minus cost of goods sold'],
     ['Stock value', t.stock, 'At weighted-average cost'],
   ]
@@ -136,7 +141,7 @@ function barcodeKey(code) {
 function localProduct(code) {
   return state.products.find((p) => barcodeKey(p.code) === barcodeKey(code));
 }
-async function find(kind) {
+async function findProduct(kind) {
   const code = $('#' + kind + 'Code').value.trim(),
     p = localProduct(code);
   if (!code) {
@@ -172,17 +177,18 @@ async function scanDone(code) {
     if (!localProduct(code)) await fetchProductOnline(code);
   } else {
     $('#' + scanTarget + 'Code').value = code;
-    await find(scanTarget);
+    await findProduct(scanTarget);
   }
 }
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('button');
   if (!b) return;
+  if (b.dataset.save && transactionBusy) return;
   try {
     if (b.dataset.page) go(b.dataset.page);
     if (b.dataset.go) go(b.dataset.go);
     if (b.dataset.scan) await openScan(b.dataset.scan);
-    if (b.dataset.find) find(b.dataset.find);
+    if (b.dataset.find) await findProduct(b.dataset.find);
     if (b.dataset.add) {
       const k = b.dataset.add,
         id = Number($('#' + k + 'Select').value);
@@ -199,10 +205,11 @@ document.addEventListener('click', async (e) => {
       renderCart(k);
     }
     if (b.dataset.save) {
+      transactionBusy = true;
       const k = b.dataset.save;
       if (!carts[k].length) throw Error('Add at least one product');
       b.disabled = true;
-      const result = await api('transaction', { kind: k, items: carts[k] });
+      const result = await api('transaction', { kind: k, items: carts[k], ...(window.erp ? window.erp.transactionData(k) : {}) });
       carts[k] = [];
       await refresh();
       notice('Saved successfully. Reference: ' + result.reference);
@@ -210,6 +217,7 @@ document.addEventListener('click', async (e) => {
   } catch (e) {
     notice(e.message, true);
   } finally {
+    if (b.dataset.save) transactionBusy = false;
     b.disabled = false;
   }
 });
@@ -223,7 +231,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && ['purchaseCode', 'saleCode'].includes(e.target.id)) {
     e.preventDefault();
-    find(e.target.id.replace('Code', ''));
+    findProduct(e.target.id.replace('Code', '')).catch((error) => notice(error.message, true));
   }
 });
 $('#search').oninput = renderProducts;
@@ -232,7 +240,9 @@ $('#closeProduct').onclick = () => $('#productDialog').close();
 $('#scanProduct').onclick = () => openScan('product');
 $('#productForm').onsubmit = async (e) => {
   e.preventDefault();
-  const b = e.target.querySelector('button:last-child');
+  if (productBusy) return;
+  productBusy = true;
+  const b = $('#saveProduct');
   b.disabled = true;
   try {
     await api('product', Object.fromEntries(new FormData(e.target)));
@@ -243,6 +253,7 @@ $('#productForm').onsubmit = async (e) => {
   } catch (e) {
     alert(e.message);
   } finally {
+    productBusy = false;
     b.disabled = false;
   }
 };
@@ -271,14 +282,14 @@ $('#backup').onclick = async () => {
   try {
     const r = await fetch('/api/backup');
     if (!r.ok) throw Error('Backup failed; sign in again');
-    download(await r.blob(), 'soccho-backup-' + new Date().toISOString().slice(0, 10) + '.sqlite3');
+    download(await r.blob(), 'inventory-backup-' + new Date().toISOString().slice(0, 10) + '.sqlite3');
   } catch (e) {
     notice(e.message, true);
   }
 };
 $('#export').onclick = () => {
   const rows = [
-    ['Date', 'Reference', 'Type', 'Code', 'Product', 'Quantity', 'Unit price BDT', 'Total BDT'],
+    ['Date', 'Reference', 'Type', 'Code', 'Product', 'Quantity', 'Unit price', 'Total'],
     ...state.history.map((r) => [
       r.created,
       r.reference,
@@ -319,7 +330,7 @@ $('#today').textContent = new Date().toLocaleDateString('en-GB', {
   month: 'long',
   year: 'numeric',
 });
-refresh().catch(() => {});
+refresh().catch((e) => { if (!e.message.includes('sign in')) $('#loginError').textContent = e.message; });
 
 function lookupProduct() {
   const p = localProduct($('#productCode').value.trim());
@@ -334,10 +345,10 @@ function lookupProduct() {
       'Found: ' +
       p.name +
       '. Already registered. Use Purchase stock to receive more of this product.';
-    form.querySelector('button:last-child').disabled = true;
+    $('#saveProduct').disabled = true;
   } else {
     $('#productLookup').textContent = 'New product: enter the product name manually.';
-    form.querySelector('button:last-child').disabled = false;
+    $('#saveProduct').disabled = false;
   }
 }
 $('#productCode').addEventListener('input', () => {
@@ -347,7 +358,7 @@ $('#productCode').addEventListener('input', () => {
 $('#productDialog').addEventListener('close', () => {
   $('#productForm').reset();
   $('#productLookup').textContent = '';
-  $('#productForm').querySelector('button:last-child').disabled = false;
+  $('#saveProduct').disabled = false;
 });
 document.addEventListener('change', (e) => {
   for (const k of ['purchase', 'sale']) {
@@ -490,7 +501,7 @@ $('#scanFile').onchange = async (e) => {
     $('#cropCanvas').height = Math.round(image.naturalHeight * scale);
     drawCrop();
     cropMessage('Photo ready. Drag around one code or adjust the four sliders.');
-  } catch (e) {
+  } catch {
     cropMessage(
       'Could not open this photo. Try JPEG or PNG; your previous photo is retained.',
       'error',
@@ -570,7 +581,7 @@ $('#decodeCrop').onclick = async () => {
     $('#scanResult').hidden = false;
     $('#useScanResult').hidden = false;
     cropMessage('Code detected. Click Use decoded value to fill the product form.', 'success');
-  } catch (e) {
+  } catch {
     cropMessage(
       'No readable code detected, or the crop could not be decoded. Keep the complete code and a clear border, adjust the crop, and retry.',
       'error',
@@ -578,7 +589,7 @@ $('#decodeCrop').onclick = async () => {
   } finally {
     try {
       scanner?.clear();
-    } catch (e) {}
+    } catch { /* Keep crop for retry. */ }
     setCropBusy(false);
   }
 };
@@ -624,7 +635,7 @@ async function fetchProductOnline(code) {
   const button = $('#onlineLookup');
   button.disabled = true;
   button.textContent = 'Searching online…';
-  const save = $('#productForm').querySelector('button:last-child');
+  const save = $('#saveProduct');
   save.disabled = true;
   const previousName = $('#productName').value,
     previousCategory = $('#productForm').elements.category.value;
@@ -652,7 +663,7 @@ async function fetchProductOnline(code) {
       link.rel = 'noopener noreferrer';
       info.appendChild(link);
     } else $('#productLookup').textContent = result.message;
-  } catch (e) {
+  } catch {
     if (requestId === onlineRequestId)
       $('#productLookup').textContent =
         'Online lookup failed. Check laptop internet, retry, or enter the name manually.';
@@ -696,7 +707,7 @@ async function decodePhotoCrop(out) {
         false,
       );
       if (value) return value;
-    } catch (e) {}
+    } catch { /* Keep crop for retry. */ }
     scanner.clear();
     await new Promise((resolve) => setTimeout(resolve, 0));
   }

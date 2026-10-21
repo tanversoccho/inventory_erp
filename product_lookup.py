@@ -14,7 +14,7 @@ def read_json(url):
     request = Request(
         url,
         headers={
-            "User-Agent": "SocchoERP/2.1 (local inventory barcode lookup)",
+            "User-Agent": "InventoryERP/3.0 (local inventory barcode lookup)",
             "Accept": "application/json",
         },
     )

@@ -1,0 +1,38 @@
+{
+  "2026-08": {
+    "gross_sales": 1673300,
+    "sales_returns": 5200,
+    "purchases": 5514500,
+    "purchase_returns": 0,
+    "cogs": 1163423,
+    "units": 219,
+    "adjustment_cost": 3038,
+    "sales": 1668100,
+    "profit": 504677,
+    "expenses": 245000,
+    "operating_result": 256639,
+    "transactions": 36,
+    "average_sale": 46481,
+    "margin": 30.25,
+    "current_stock_value": 54954105,
+    "low_stock_count": 1
+  },
+  "2026-09": {
+    "gross_sales": 1841600,
+    "sales_returns": 4500,
+    "purchases": 5506800,
+    "purchase_returns": 0,
+    "cogs": 1273884,
+    "units": 244,
+    "adjustment_cost": 3034,
+    "sales": 1837100,
+    "profit": 563216,
+    "expenses": 246500,
+    "operating_result": 313682,
+    "transactions": 45,
+    "average_sale": 40924,
+    "margin": 30.66,
+    "current_stock_value": 54954105,
+    "low_stock_count": 1
+  }
+}
