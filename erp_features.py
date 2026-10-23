@@ -37,9 +37,9 @@ def migrate(s):
     """Backup existing DB before additive v1 migration; SQLite rolls DDL back on failure."""
     with s.connect() as c:
         version = c.execute('PRAGMA user_version').fetchone()[0]
-        if version > 1:
+        if version > 2:
             raise RuntimeError('Database is newer than this application; use matching application version')
-        if version == 1:
+        if version >= 1:
             return
         has_data = c.execute('SELECT count(*) FROM products').fetchone()[0] or c.execute('SELECT count(*) FROM settings').fetchone()[0]
         if has_data:
@@ -306,7 +306,8 @@ def report(s, query):
                 sql += clause
                 params.append(value)
         all_rows = [dict(r) for r in c.execute(sql + ' ORDER BY m.created,m.id', params)]
-        expenses = [dict(r) for r in c.execute('SELECT * FROM expenses ORDER BY created,id')]
+        from reliability import expense_rows
+        expenses = expense_rows(c)
     for r in all_rows:
         r['name'] = r['name_snapshot']
         r['category'] = r['category_snapshot']

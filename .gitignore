@@ -102,3 +102,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# Explicitly track only the synthetic sample shipped with this application.
+!demo/sample_12_months.sqlite3

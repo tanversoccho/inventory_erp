@@ -5,6 +5,48 @@
   let config = { currency_symbol: '৳', precision: 2, locale: 'en-BD', grouping: true, timezone: 'Asia/Dhaka' };
   let currentState, currentPage, admin, reportData, reportSequence = 0;
   const paging = {};
+  let appliedReportQuery = '', historySequence = 0;
+  const historyState = {page:1,size:25,q:'',sort:'id',direction:'desc'};
+  const drafts = { purchase: null, sale: null };
+  let supplierCache = null;
+  function captureDrafts() {
+    for (const kind of ['purchase','sale']) {
+      const payment=el('#'+kind+'Payment'), note=el('#'+kind+'Note');
+      if (payment && note) drafts[kind]={payment_method:payment.value,note:note.value,supplier_id:kind==='purchase'?(el('#purchaseSupplier')?.dataset.ready==='true'?el('#purchaseSupplier').value:(drafts.purchase?.supplier_id||'')):''};
+    }
+  }
+  function resetDraft(kind) {
+    drafts[kind]=null;
+    const payment=el('#'+kind+'Payment'), note=el('#'+kind+'Note');
+    if(payment)payment.value=config.default_payment;
+    if(note)note.value=config.default_note;
+    if(kind==='purchase' && el('#purchaseSupplier'))el('#purchaseSupplier').value='';
+  }
+  function historyQuery() { return new URLSearchParams(Object.entries(historyState).map(([k,v])=>[k,String(v)])); }
+  async function exportHistory() {
+    const response=await fetch('/api/history.csv?'+historyQuery());
+    if(!response.ok)throw Error('Export failed; sign in again');
+    const link=document.createElement('a');link.href=URL.createObjectURL(await response.blob());link.download='transactions.csv';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+  }
+  async function fetchHistory() {
+    const seq=++historySequence, target=el('#historyEnhanced');
+    if(!target)return;
+    const focused=target.querySelector('input')===document.activeElement;
+    const position=focused?document.activeElement.selectionStart:0;
+    try {
+      const data=await request('history?'+historyQuery());
+      if(seq!==historySequence)return;
+      historyState.page=data.page;
+      const cols=columns.movements;
+      const keys=['id','created','reference','kind','name','quantity','unit_price','unit_cost','note'];
+      target.innerHTML=`<div class="table-tools"><input id="historySearch" placeholder="Search all transactions" aria-label="Search all transactions" value="${escape(historyState.q)}"><span>${data.total} records</span></div><div class="table-wrap"><table><thead><tr>${cols.map((c,i)=>`<th><button class="text" data-history-sort="${keys[i]}">${escape(c[1])}</button></th>`).join('')}</tr></thead><tbody>${data.rows.map((row)=>{const r={...row,local_date:date(row.created)+' '+time(row.created)};return '<tr>'+cols.map((c)=>'<td>'+(c[2]?c[2](r[c[0]],r):escape(r[c[0]]))+'</td>').join('')+'</tr>';}).join('')||'<tr><td colspan="9">No matching transactions.</td></tr>'}</tbody></table></div><div class="table-tools"><button id="historyPrev" ${data.page<=1?'disabled':''}>Previous</button><span>Page ${data.page} / ${Math.max(1,Math.ceil(data.total/data.size))}</span><button id="historyNext" ${data.page*data.size>=data.total?'disabled':''}>Next</button></div>`;
+      el('#historySearch').oninput=(e)=>{historyState.q=e.target.value;historyState.page=1;fetchHistory();};
+      el('#historyPrev').onclick=()=>{historyState.page--;fetchHistory();};
+      el('#historyNext').onclick=()=>{historyState.page++;fetchHistory();};
+      target.querySelectorAll('[data-history-sort]').forEach((button)=>button.onclick=()=>{const key=button.dataset.historySort;historyState.direction=historyState.sort===key&&historyState.direction==='asc'?'desc':'asc';historyState.sort=key;historyState.page=1;fetchHistory();});
+      if(focused){el('#historySearch').focus();el('#historySearch').setSelectionRange(position,position);}
+    } catch(error){if(seq===historySequence)message(error.message,true);}
+  }
   const request = async (path, data) => {
     const response = await fetch('/api/' + path, data === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     const result = await response.json();
@@ -101,11 +143,13 @@
   function query() { const q=new URLSearchParams(); for(const [key,value] of new FormData(el('#reportForm'))) if(value)q.set(key,value);return q; }
   async function fetchReport() {
     const seq=++reportSequence;
+    const selectedQuery=query().toString();
     el('#reportStatus').textContent='Loading reports…';
     try {
-      const data=await request('reports?'+query());
+      const data=await request('reports?'+selectedQuery);
       if(seq!==reportSequence)return;
       reportData=data;
+      appliedReportQuery=selectedQuery;
       renderReport();
       el('#reportStatus').textContent=`${data.start} through ${data.end} · ${data.timezone} · ${data.currency}`;
     } catch(e){if(seq===reportSequence)el('#reportStatus').textContent=e.message;}
@@ -129,7 +173,7 @@
   }
   async function downloadReport(key) {
     try {
-      const q=query();q.set('table',key);
+      const q=new URLSearchParams(appliedReportQuery);q.set('table',key);
       const response=await fetch('/api/reports.csv?'+q);
       if(!response.ok)throw Error('Export failed; sign in again');
       const link=document.createElement('a');link.href=URL.createObjectURL(await response.blob());link.download=`${key}-${reportData.start}-${reportData.end}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);
@@ -158,7 +202,7 @@
     admin=await request('administration');
     if(currentPage==='expenses') {
       el('#expenses').innerHTML=`<article class="panel"><h2>Record an expense</h2><form id="expenseForm" class="settings-grid"><label>Date<input name="date" type="date" value="${new Intl.DateTimeFormat('en-CA',{timeZone:config.timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())}" required></label><label>Category<input name="category" required maxlength="100"></label><label>Amount (${escape(config.currency)})<input name="amount" type="number" min="0.01" step="0.01" required></label><label>Payment method<select name="payment_method">${options(config.payment_methods,config.default_payment)}</select></label><label>Description<input name="description" maxlength="1000"></label><label>Payee<input name="payee" maxlength="200"></label><button>Save expense</button></form><p>Expenses are immutable records. Use Reports to filter, summarize and export them.</p></article><article class="panel" id="expensesTable"></article>`;
-      table('expenses',admin.expenses.map((r)=>({...r,local_date:date(r.created)})),columns.expenses,el('#expensesTable'));
+      table('expenses',admin.expenses.map((r)=>({...r,local_date:date(r.created)})),[...columns.expenses,['reversal_reference','Correction',(v,r)=>v?'Reversed: '+escape(v):`<button class="text" data-reverse-expense="${r.id}">Reverse expense</button>`]],el('#expensesTable'));
       formSubmit('#expenseForm','expense');
     } else if(currentPage==='suppliers') {
       el('#suppliers').innerHTML='<article class="panel"><h2>Add supplier</h2><form id="supplierForm" class="settings-grid"><label>Name<input name="name" maxlength="200" required></label><label>Phone<input name="phone" maxlength="100"></label><label>Address<input name="address" maxlength="1000"></label><button>Save supplier</button></form></article><article class="panel" id="suppliersTable"></article>';
@@ -169,8 +213,12 @@
   function formSubmit(selector,path,after=administration) {el(selector).onsubmit=async(e)=>{e.preventDefault();e.submitter.disabled=true;try{await request(path,Object.fromEntries(new FormData(e.target)));message('Saved successfully.');await after();}catch(error){message(error.message,true);}finally{e.submitter.disabled=false;}};}
   function transactionExtras(kind) {
     const panel=el('#'+kind+' .panel:last-child');
-    const box=document.createElement('div');box.className='transaction-options';box.innerHTML=`<label>Payment method (label only; no payment collection)<select id="${kind}Payment">${options(config.payment_methods,config.default_payment)}</select></label><label>Note<input id="${kind}Note" maxlength="1000" value="${escape(config.default_note)}"></label>${kind==='purchase'?`<label>Supplier<select id="purchaseSupplier"><option value="">No supplier</option></select></label>`:''}`;panel.prepend(box);
-    if(kind==='purchase')request('administration').then((data)=>{const select=el('#purchaseSupplier');if(select)select.innerHTML='<option value="">No supplier</option>'+data.suppliers.map((p)=>`<option value="${p.id}">${escape(p.name)}</option>`).join('');}).catch((e)=>message(e.message,true));
+    const draft=drafts[kind]||{payment_method:config.default_payment,note:config.default_note,supplier_id:''};
+    const box=document.createElement('div');box.className='transaction-options';box.innerHTML=`<label>Payment method (label only; no payment collection)<select id="${kind}Payment">${options(config.payment_methods,draft.payment_method)}</select></label><label>Note<input id="${kind}Note" maxlength="1000" value="${escape(draft.note)}"></label>${kind==='purchase'?`<label>Supplier<select id="purchaseSupplier" data-ready="${supplierCache===null?'false':'true'}"><option value="">No supplier</option>${(supplierCache||[]).map((p)=>`<option value="${p.id}" ${String(p.id)===String(draft.supplier_id)?'selected':''}>${escape(p.name)}</option>`).join('')}</select></label>`:''}`;panel.prepend(box);
+    box.addEventListener('input',captureDrafts);
+    box.addEventListener('change',captureDrafts);
+    const supplierSelect=kind==='purchase'?el('#purchaseSupplier'):null;
+    if(kind==='purchase')request('administration').then((data)=>{supplierCache=data.suppliers;const select=el('#purchaseSupplier');if(select!==supplierSelect)return;const wanted=select?.dataset.ready==='true'?select.value:(drafts.purchase?.supplier_id||draft.supplier_id||'');if(select)select.innerHTML='<option value="">No supplier</option>'+data.suppliers.map((p)=>`<option value="${p.id}">${escape(p.name)}</option>`).join('');if(select){select.value=wanted;select.dataset.ready='true';}}).catch((e)=>message(e.message,true));
   }
   function openDialog(content) {el('#adminDialogContent').innerHTML=content;el('#adminDialog').showModal();}
   function editProduct(id) {
@@ -182,13 +230,18 @@
     openDialog(`<h2>Return / stock correction</h2><p>Returns must reference an original ledger line ID. Adjustment costs enter the operating result. Enter “damaged” or “expired” in the reason for write-offs.</p><form id="correctionForm"><label>Type<select name="kind">${options(['sale_return','purchase_return','adjust_in','adjust_out'])}</select></label><label>Product<select name="product_id">${currentState.products.map((p)=>`<option value="${p.id}">${escape(p.name)}</option>`).join('')}</select></label><label>Original line ID (returns only)<input name="original_id" type="number" min="1"></label><label>Quantity<input name="quantity" type="number" min="1" step="1" required></label><label>Unit cost (stock added only)<input name="cost" type="number" min="0" step="0.01" value="0"></label><label>Reason<input name="reason" required maxlength="1000"></label><button>Save correction</button><p id="correctionStatus" role="status"></p></form>`);
     el('#correctionForm').onsubmit=async(e)=>{e.preventDefault();if(!confirm('Record this permanent ledger correction?'))return;e.submitter.disabled=true;try{await request('correction',Object.fromEntries(new FormData(e.target)));el('#adminDialog').close();location.reload();}catch(error){el('#correctionStatus').textContent=error.message;}finally{e.submitter.disabled=false;}};
   }
+  function reverseExpense(id) {
+    const day=new Intl.DateTimeFormat('en-CA',{timeZone:config.timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    openDialog(`<h2>Reverse expense</h2><p>The original record stays in the ledger. An equal negative expense is recorded on the date below. Record a new expense separately if you need a replacement.</p><form id="expenseReverseForm"><input name="expense_id" type="hidden" value="${Number(id)}"><label>Correction date<input name="date" type="date" value="${day}" required></label><label>Reason<input name="reason" required maxlength="1000"></label><button>Confirm reversal</button><p id="expenseReverseStatus" role="status"></p></form>`);
+    el('#expenseReverseForm').onsubmit=async(e)=>{e.preventDefault();if(!confirm('Record this permanent expense reversal?'))return;e.submitter.disabled=true;try{await request('expense-reverse',Object.fromEntries(new FormData(e.target)));el('#adminDialog').close();await administration();message('Expense reversed. Original record preserved.');}catch(error){el('#expenseReverseStatus').textContent=error.message;}finally{e.submitter.disabled=false;}};
+  }
   async function invoice(reference) {
     const data=await request('invoice?reference='+encodeURIComponent(reference));
     const t=data.transaction;let total=0;
     openDialog(`<div class="invoice"><img class="asset-preview" ${config.assets.business_logo||config.assets.logo?`src="${escape(config.assets.business_logo||config.assets.logo)}"`:'hidden'} alt="Business logo"><h2>${escape(config.company||config.app_name)}</h2><p>${escape(config.address)}<br>${escape(config.phone)} ${escape(config.email)}</p><p>${escape(config.tax_id)}</p><p>${escape(config.invoice_header)}</p><h3>${escape(t.kind)} · ${escape(reference)}</h3><p>${escape(date(t.created))} ${escape(time(t.created))} · ${escape(config.currency)}</p><div class="table-wrap"><table><thead><tr><th>Item</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead><tbody>${data.lines.map((r)=>{const value=r.quantity*r.unit_price;total+=value;return `<tr><td>${escape(r.name_snapshot)}</td><td>${r.quantity}</td><td>${escape(money(r.unit_price))}</td><td>${escape(money(value))}</td></tr>`;}).join('')}</tbody></table></div><h3>Total: ${escape(money(total))}</h3><p>${escape(t.note)}</p><p>Payment label: ${escape(t.payment_method)}. Payment collection is not tracked.</p><p>${escape(config.invoice_footer)}</p></div><button id="printInvoice">Print invoice / receipt</button>`);
     el('#printInvoice').onclick=()=>{document.body.classList.add('print-invoice');window.print();document.body.classList.remove('print-invoice');};
   }
-  document.addEventListener('click',async(e)=>{const button=e.target.closest('button');if(!button)return;try{if(button.dataset.editProduct)editProduct(button.dataset.editProduct);if(button.dataset.invoice)await invoice(button.dataset.invoice);}catch(error){message(error.message,true);}});
+  document.addEventListener('click',async(e)=>{const button=e.target.closest('button');if(!button)return;try{if(button.dataset.editProduct)editProduct(button.dataset.editProduct);if(button.dataset.invoice)await invoice(button.dataset.invoice);if(button.dataset.reverseExpense)reverseExpense(button.dataset.reverseExpense);}catch(error){message(error.message,true);}});
   function afterRender(state,page) {
     currentState=state;currentPage=page;
     if(!el('#fullBackup')){const b=document.createElement('button');b.id='fullBackup';b.textContent='Download full backup';el('.aside-bottom').prepend(b);b.onclick=async()=>{b.disabled=true;try{const response=await fetch('/api/backup-bundle');if(!response.ok)throw Error('Backup failed; sign in again');const link=document.createElement('a');link.href=URL.createObjectURL(await response.blob());link.download='inventory-full-backup.zip';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);}catch(error){message(error.message,true);}finally{b.disabled=false;}};}
@@ -199,7 +252,7 @@
     let correction=el('#openCorrection');if(!correction){correction=document.createElement('button');correction.id='openCorrection';correction.type='button';correction.textContent='Returns / stock adjustment';el('#history .toolbar').append(correction);}correction.onclick=correctionDialog;
     if(!el('#historyEnhanced')){el('#history .panel .table-wrap').hidden=true;el('#history .panel').insertAdjacentHTML('beforeend','<div id="historyEnhanced"></div>');}
     if(!el('#inventoryEnhanced')){el('#inventory .panel .table-wrap').hidden=true;el('#inventory .panel').insertAdjacentHTML('beforeend','<div id="inventoryEnhanced"></div>');}
-    table('history',state.history.map((r)=>({...r,name:r.name_snapshot||r.name,local_date:date(r.created)+' '+time(r.created)})),columns.movements,el('#historyEnhanced'));
+    if(page==='history')fetchHistory();
     const productCols=[['name','Product',(v,p)=>`<b>${escape(v)}</b><small>${escape(p.code)}</small><button class="text" data-edit-product="${p.id}">Edit</button>`],...config.product_columns.map((key)=>[key,key,key==='category'?undefined:money]),['stock','Stock'],['unit','Unit'],['minimum','Reorder level']];
     const products=[...state.products].sort((a,b)=>config.product_sort==='stock'?a.stock-b.stock:String(a[config.product_sort]).localeCompare(String(b[config.product_sort])));
     const draw=()=>table('inventory',products.filter((p)=>(p.name+' '+p.code+' '+p.category).toLowerCase().includes(el('#search').value.toLowerCase())),productCols,el('#inventoryEnhanced'));
@@ -213,6 +266,6 @@
   el('#closeAdmin').onclick=()=>el('#adminDialog').close();
   el('#toggleNav').onclick=()=>{config.collapsed=!config.collapsed;apply();};
   el('#addProduct').addEventListener('click',()=>{const form=el('#productForm');form.elements.minimum.value=config.minimum;let units=el('#newProductUnit');if(!units){const label=document.createElement('label');label.textContent='Measurement unit (whole quantities)';units=document.createElement('select');units.id='newProductUnit';units.name='unit';label.append(units);form.insertBefore(label,el('#saveProduct'));}units.innerHTML=options(config.units,config.units[0]);form.elements.category.setAttribute('list','categoryChoices');let list=el('#categoryChoices');if(!list){list=document.createElement('datalist');list.id='categoryChoices';form.append(list);}list.innerHTML=options(config.categories);});
-  window.erp={load,money,afterRender,transactionData:(kind)=>({payment_method:el('#'+kind+'Payment')?.value||config.default_payment,note:el('#'+kind+'Note')?.value||'',supplier_id:kind==='purchase'?el('#purchaseSupplier')?.value||null:null})};
+  window.erp={load,money,afterRender,captureDrafts,resetDraft,exportHistory,transactionData:(kind)=>({payment_method:el('#'+kind+'Payment')?.value||config.default_payment,note:el('#'+kind+'Note')?.value||'',supplier_id:kind==='purchase'?el('#purchaseSupplier')?.value||null:null})};
   request('public-settings').then((data)=>{if(!config.app_name){config={...config,...data};apply();}}).catch((e)=>{el('#loginError').textContent=e.message;});
 })();

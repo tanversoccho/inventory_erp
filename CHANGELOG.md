@@ -1,3 +1,9 @@
+# 23 October 2026 reliability update
+
+See RELIABILITY_UPDATE.md for the current patch, commands, migration v2 and executed verification (38 Python cases, ESLint and DOM/HTTP regression).
+
+This update resolves all six findings in the October 23 snapshot review and adds the suggested pagination, expense reversal, npm start and expanded regression tests. The historical implementation notes below describe the preceding release and its limitations at that time. Expense reversal, demo packaging and browser regression coverage are superseded by the update notes.
+
 # Upgrade delivery status
 
 ## Completed

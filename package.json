@@ -5,7 +5,12 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint static/app.js static/upgrade.js",
-    "test": "python -m unittest discover -v"
+    "test": "python -m unittest discover -v",
+    "start": "python server.py",
+    "demo:seed": "python create_sample_database.py demo/sample_12_months.sqlite3",
+    "demo": "python run_demo.py",
+    "test:browser": "node test_browser.cjs",
+    "test:dom": "node test_dom.cjs"
   },
   "keywords": [],
   "author": "",

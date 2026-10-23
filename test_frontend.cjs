@@ -42,7 +42,7 @@ const submit=(f)=>f.dispatchEvent(new w.SubmitEvent('submit',{cancelable:true,su
  click('[data-page="sale"]');d.querySelector('#saleSelect').value='1';click('[data-add="sale"]');
  d.querySelector('#saleNote').value='DOM test sale';click('[data-save="sale"]');
  await until(()=>d.querySelector('#notice').textContent.includes('INV-'),'sale committed');
- click('[data-page="history"]');click('[data-invoice]');await until(()=>d.querySelector('.invoice'),'invoice');click('#closeAdmin');
+ click('[data-page="history"]');await until(()=>d.querySelector('#historyEnhanced [data-invoice]'),'remote invoice references');click('#historyEnhanced [data-invoice]');await until(()=>d.querySelector('.invoice'),'invoice');click('#closeAdmin');
  click('[data-page="sale"]');assert(d.querySelector('#salePayment'));click('[data-scan="sale"]');assert(d.querySelector('#scanDialog').open);assert(d.querySelector('#cropLeft'));click('#closeScan');
  assert.equal(errors.length,0,errors.join('\n'));console.log('PASS: branding, login, filtered reports, runtime settings/theme, expense and supplier saves, product edit, corrections, sale metadata and crop scanner DOM.');await new Promise((r)=>setTimeout(r,250));dom.window.close();
 })().catch((e)=>{console.error(e);dom.window.close();process.exitCode=1;});

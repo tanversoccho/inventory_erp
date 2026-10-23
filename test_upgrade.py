@@ -45,7 +45,7 @@ class UpgradeTests(unittest.TestCase):
             c.executescript("CREATE TABLE products(id INTEGER PRIMARY KEY,code TEXT UNIQUE NOT NULL,name TEXT NOT NULL,category TEXT NOT NULL DEFAULT '',stock INTEGER NOT NULL DEFAULT 0 CHECK(stock>=0),cost INTEGER NOT NULL DEFAULT 0,price INTEGER NOT NULL DEFAULT 0,minimum INTEGER NOT NULL DEFAULT 5);CREATE TABLE movements(id INTEGER PRIMARY KEY,created TEXT NOT NULL,kind TEXT NOT NULL,product_id INTEGER NOT NULL REFERENCES products(id),quantity INTEGER NOT NULL,unit_price INTEGER NOT NULL,unit_cost INTEGER NOT NULL,reference TEXT NOT NULL);CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);INSERT INTO settings VALUES('password','keep-me');INSERT INTO products(code,name,stock,cost) VALUES('OLD','Old',5,1200);INSERT INTO movements(created,kind,product_id,quantity,unit_price,unit_cost,reference) VALUES('2025-12-31T23:00:00+06:00','purchase',1,5,1000,1200,'OLD-REF');")
         server.initialize();server.initialize()
         with server.connect() as c:
-            self.assertEqual(c.execute('PRAGMA user_version').fetchone()[0],1)
+            self.assertEqual(c.execute('PRAGMA user_version').fetchone()[0],2)
             self.assertEqual(c.execute('SELECT value FROM settings').fetchone()[0],'keep-me')
             row=c.execute('SELECT * FROM movements').fetchone()
             self.assertEqual(row['unit_cost'],1200);self.assertEqual(row['actual_unit_cost'],1000)
@@ -145,6 +145,7 @@ class HTTPTests(unittest.TestCase):
     def login(self):self.assertEqual(self.call('/api/login',{'password':'testpassword'})[0],200)
     def test_real_http_auth_settings_reports_session_csrf(self):
         self.assertEqual(self.call('/api/settings')[0],401)
+        self.assertEqual(self.call('/api/history')[0],401)
         public=json.loads(self.call('/api/public-settings')[1]);self.assertNotIn('password',public)
         self.assertEqual(self.call('/api/settings',{'app_name':'Bad'})[0],401)
         self.login();self.assertEqual(self.call('/api/settings',{'app_name':'Live Brand'})[0],200)
@@ -156,6 +157,14 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(self.call('/api/reports?month=2026-10')[0],200)
         self.assertEqual(self.call('/api/reports?month=wrong')[0],400)
         self.assertEqual(self.call('/api/reports.csv?month=2026-10&table=summary')[0],200)
+        body={'kind':'sale','request_id':'http-retry-123456789','items':[{'id':1,'quantity':1,'price':20}]}
+        first=json.loads(self.call('/api/transaction',body)[1]);second=json.loads(self.call('/api/transaction',body)[1])
+        self.assertEqual(first['reference'],second['reference'])
+        self.assertEqual(json.loads(self.call('/api/history?size=1')[1])['size'],1)
+        self.assertEqual(self.call('/api/history.csv?q=HTTP')[0],200)
+        self.assertEqual(self.call('/api/expense',{'date':'2026-08-10','amount':50,'category':'Rent','payment_method':'Cash'})[0],200)
+        self.assertEqual(self.call('/api/expense-reverse',{'expense_id':1,'date':'2026-09-10','reason':'Mistake'})[0],200)
+        self.assertEqual(self.call('/api/expense-reverse',{'expense_id':1,'date':'2026-09-10','reason':'Again'})[0],400)
         self.assertEqual(self.call('/api/backup')[0],200)
         self.assertEqual(self.call('/assets/../../server.py')[0],404)
         self.assertEqual(self.call('/api/logout',{})[0],200);self.assertEqual(self.call('/api/state')[0],401)

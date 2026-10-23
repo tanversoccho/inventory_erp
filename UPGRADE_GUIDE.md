@@ -34,10 +34,10 @@ First startup automatically applies additive schema v1. Existing products, stock
 
 ## Test the demo safely
 
-The bundled sample covers October 2025–September 2026 with 16 products, multiple-line sales/purchases, returns, damaged stock, expenses, one low-stock item and a slow-moving item. It has no password; create your own demo password at first launch. It never loads into your real DB automatically.
+The bundled demo/sample_12_months.sqlite3 sample covers October 2025–September 2026 with 16 products, multiple-line sales/purchases, returns, damaged stock, expenses, one low-stock item and a slow-moving item. It has no password; create your own demo password at first launch. It never loads into your real DB automatically.
 
 ```powershell
-.\.venv\Scripts\python.exe .\server.py --db .\sample_12_months.sqlite3 --port 8001
+.\.venv\Scripts\python.exe .\server.py --db .\demo\sample_12_months.sqlite3 --port 8001
 ```
 
 Open http://localhost:8001. Choose Reports, then August or September 2026. Figures in BDT:
@@ -53,7 +53,7 @@ Generate another reproducible demo, or verify one:
 
 ```powershell
 .\.venv\Scripts\python.exe .\create_sample_database.py .\another_demo.sqlite3
-.\.venv\Scripts\python.exe .\create_sample_database.py .\sample_12_months.sqlite3 --validate
+.\.venv\Scripts\python.exe .\create_sample_database.py .\demo\sample_12_months.sqlite3 --validate
 ```
 
 The generator refuses to overwrite any existing file. `schema.sql` recreates the empty current schema without passwords or products. For an empty application database, simply start with a new `--db` path; the application creates and migrates it automatically.

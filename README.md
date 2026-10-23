@@ -12,8 +12,10 @@ python -m venv .venv
 
 Open http://localhost:8000. New databases prompt for your own password. Existing passwords/data persist. START_WINDOWS.bat creates the venv and installs required packages. No npm tooling is needed to run the application.
 
-Demo only: `server.py --db sample_12_months.sqlite3 --port 8001`. Never replace the real database with a demo. The bundled sample has no default password.
+Demo only: `server.py --db demo/sample_12_months.sqlite3 --port 8001`. Never replace the real database with a demo. The bundled demo/sample_12_months.sqlite3 sample has no default password.
 
 This is a single-owner, single-currency inventory application with management reports, not full accounting/payroll software. Money uses integer minor units; quantities remain whole units. Cash settlement, tax calculations, receivables/payables, complete language translation and historical month-end valuation are not implemented.
 
 `PHOTO_SCAN.md` and `ONLINE_LOOKUP.md` document the preserved scanner/catalog features. The upgrade guide supersedes earlier installation, reporting and security statements in older documentation.
+
+Convenience commands: `npm start` (Python on PATH), `npm run demo` (separate sample on port 8001). See RELIABILITY_UPDATE.md for the October 23 patch and new workflow fixes.

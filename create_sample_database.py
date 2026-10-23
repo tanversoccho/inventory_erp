@@ -84,7 +84,7 @@ def create_sample(output):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
-    parser.add_argument('output',nargs='?',default='sample_12_months.sqlite3')
+    parser.add_argument('output',nargs='?',default='demo/sample_12_months.sqlite3')
     parser.add_argument('--validate',action='store_true')
     args=parser.parse_args()
     print(json.dumps(validate(args.output) if args.validate else create_sample(args.output),indent=2))

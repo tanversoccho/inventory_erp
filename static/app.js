@@ -7,6 +7,7 @@ const $ = (s) => document.querySelector(s),
 let scanBusy = false;
 let transactionBusy = false;
 let productBusy = false;
+const pendingRequests = { purchase: null, sale: null };
 let state,
   page = 'dashboard',
   carts = { purchase: [], sale: [] },
@@ -34,6 +35,7 @@ function notice(msg, error = false) {
   $('#notice').className = error ? 'error' : '';
 }
 async function refresh() {
+  if (window.erp) window.erp.captureDrafts();
   state = await api('state');
   if (window.erp) await window.erp.load();
   $('#login').hidden = true;
@@ -42,6 +44,7 @@ async function refresh() {
   if (window.erp) window.erp.afterRender(state, page);
 }
 function go(p) {
+  if (window.erp) window.erp.captureDrafts();
   page = p;
   document.querySelectorAll('.page').forEach((e) => (e.hidden = e.id !== p));
   document
@@ -209,7 +212,16 @@ document.addEventListener('click', async (e) => {
       const k = b.dataset.save;
       if (!carts[k].length) throw Error('Add at least one product');
       b.disabled = true;
-      const result = await api('transaction', { kind: k, items: carts[k], ...(window.erp ? window.erp.transactionData(k) : {}) });
+      const payload = { kind: k, items: carts[k], ...(window.erp ? window.erp.transactionData(k) : {}) };
+      const body = JSON.stringify(payload);
+      if (!pendingRequests[k] || pendingRequests[k].body !== body) {
+        const bytes = new Uint8Array(24);
+        crypto.getRandomValues(bytes);
+        pendingRequests[k] = { body, key: Array.from(bytes, (v) => v.toString(16).padStart(2, '0')).join('') };
+      }
+      const result = await api('transaction', { ...payload, request_id: pendingRequests[k].key });
+      pendingRequests[k] = null;
+      if (window.erp) window.erp.resetDraft(k);
       carts[k] = [];
       await refresh();
       notice('Saved successfully. Reference: ' + result.reference);
@@ -287,44 +299,7 @@ $('#backup').onclick = async () => {
     notice(e.message, true);
   }
 };
-$('#export').onclick = () => {
-  const rows = [
-    ['Date', 'Reference', 'Type', 'Code', 'Product', 'Quantity', 'Unit price', 'Total'],
-    ...state.history.map((r) => [
-      r.created,
-      r.reference,
-      r.kind,
-      r.code,
-      r.name,
-      r.quantity,
-      r.unit_price / 100,
-      (r.quantity * r.unit_price) / 100,
-    ]),
-  ];
-  download(
-    new Blob(
-      [
-        '\ufeff' +
-        rows
-        .map((r) =>
-          r
-          .map(
-            (v) =>
-            '"' +
-            String(v)
-            .replace(/^[=+@-]/, "'")
-            .replace(/"/g, '""') +
-              '"',
-            )
-            .join(','),
-          )
-          .join('\r\n'),
-        ],
-      { type: 'text/csv;charset=utf-8' },
-    ),
-        'transactions.csv',
-      );
-};
+$('#export').onclick = () => window.erp.exportHistory().catch((error) => notice(error.message, true));
 $('#today').textContent = new Date().toLocaleDateString('en-GB', {
   day: 'numeric',
   month: 'long',

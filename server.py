@@ -9,6 +9,7 @@ import ssl
 import time
 import threading
 import erp_features as features
+import reliability
 from db_connection import ManagedConnection
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -42,6 +43,7 @@ def initialize():
 
 
     features.migrate(__import__(__name__))
+    reliability.migrate(__import__(__name__))
 
 
 def money(v):
@@ -66,14 +68,18 @@ def transaction(data):
     items = data.get("items", [])
     if kind not in ("purchase", "sale") or not items or len(items) > 200:
         raise ValueError("Choose items and transaction type")
+    request_id, digest = reliability.request_key(data)
     config = features.settings(__import__(__name__))
     ref = config['invoice_prefix' if kind == 'sale' else 'purchase_prefix'] + secrets.token_hex(6).upper()
     now = features.now(__import__(__name__))
     method = data.get('payment_method', config['default_payment'])
-    if method not in config['payment_methods']:
-        raise ValueError('Invalid payment method')
     with connect() as c:
         c.execute("BEGIN IMMEDIATE")
+        previous = reliability.previous_request(c, request_id, digest)
+        if previous:
+            return previous
+        if method not in config['payment_methods']:
+            raise ValueError('Invalid payment method')
         supplier = data.get('supplier_id') or None
         if supplier is not None and not c.execute('SELECT 1 FROM suppliers WHERE id=?', (supplier,)).fetchone():
             raise ValueError('Supplier not found')
@@ -105,6 +111,8 @@ def transaction(data):
                 "INSERT INTO movements(created,kind,product_id,quantity,unit_price,unit_cost,reference,actual_unit_cost,name_snapshot,category_snapshot) VALUES(?,?,?,?,?,?,?,?,?,?)",
                 (now, kind, p["id"], q, price, cost, ref, price if kind == 'purchase' else None, p['name'], p['category']),
             )
+        if request_id:
+            c.execute('INSERT INTO request_receipts VALUES(?,?,?)', (request_id, digest, ref))
     return {"reference": ref}
 
 
@@ -208,6 +216,12 @@ class Handler(BaseHTTPRequestHandler):
                     destination = Path(tmp) / 'backup.zip'
                     backup(DB, destination)
                     return self.reply(200, destination.read_bytes(), 'application/zip')
+            if path in ('/api/history', '/api/history.csv'):
+                try:
+                    result = reliability.history(__import__(__name__), parse_qs(urlparse(self.path).query), path.endswith('.csv'))
+                    return self.reply(200, result, 'text/csv; charset=utf-8') if path.endswith('.csv') else self.reply(200, result)
+                except (ValueError, OverflowError) as exc:
+                    return self.reply(400, {'error': str(exc)})
             if path == '/api/settings':
                 return self.reply(200, features.settings(__import__(__name__)))
             if path in ('/api/reports', '/api/reports.csv'):
@@ -221,7 +235,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(400, {'error': str(exc)})
             if path == '/api/administration':
                 with connect() as c:
-                    return self.reply(200, {table: [dict(r) for r in c.execute('SELECT * FROM ' + table + ' ORDER BY id DESC')] for table in ('expenses', 'suppliers')})
+                    return self.reply(200, {'expenses': [dict(r) for r in c.execute('SELECT e.*,r.reference reversal_reference FROM expenses e LEFT JOIN expense_reversals r ON r.expense_id=e.id ORDER BY e.id DESC')], 'suppliers': [dict(r) for r in c.execute('SELECT * FROM suppliers ORDER BY id DESC')]})
             if path == '/api/invoice':
                 ref = parse_qs(urlparse(self.path).query).get('reference', [''])[0]
                 with connect() as c:
@@ -236,21 +250,13 @@ class Handler(BaseHTTPRequestHandler):
             with connect() as c:
                 if path == "/api/state":
                     products = [dict(r) for r in c.execute("SELECT * FROM products ORDER BY name")]
-                    history = [
-                        dict(r)
-                        for r in c.execute(
-                            "SELECT m.*,p.name,p.code FROM movements m JOIN products p ON p.id=m.product_id ORDER BY m.id DESC"
-                        )
-                    ]
-                    purchase = sum(
-                        r["quantity"] * r["unit_price"] * (1 if r["kind"] == "purchase" else -1) for r in history if r["kind"] in ("purchase", "purchase_return")
-                    )
-                    sales = sum(
-                        r["quantity"] * r["unit_price"] * (1 if r["kind"] == "sale" else -1) for r in history if r["kind"] in ("sale", "sale_return")
-                    )
-                    cogs = sum(
-                        r["quantity"] * r["unit_cost"] * (1 if r["kind"] == "sale" else -1) for r in history if r["kind"] in ("sale", "sale_return")
-                    )
+                    history = [dict(r) for r in c.execute("SELECT m.*,m.name_snapshot name,p.code FROM movements m JOIN products p ON p.id=m.product_id ORDER BY m.id DESC LIMIT 5")]
+                    totals = c.execute("""SELECT
+                        coalesce(sum(CASE WHEN kind='purchase' THEN quantity*unit_price WHEN kind='purchase_return' THEN -quantity*unit_price ELSE 0 END),0) purchases,
+                        coalesce(sum(CASE WHEN kind='sale' THEN quantity*unit_price WHEN kind='sale_return' THEN -quantity*unit_price ELSE 0 END),0) sales,
+                        coalesce(sum(CASE WHEN kind='sale' THEN quantity*unit_cost WHEN kind='sale_return' THEN -quantity*unit_cost ELSE 0 END),0) cogs
+                        FROM movements""").fetchone()
+                    purchase, sales, cogs = totals['purchases'], totals['sales'], totals['cogs']
                     return self.reply(
                         200,
                         dict(
@@ -354,7 +360,7 @@ class Handler(BaseHTTPRequestHandler):
                     SESSIONS.pop(cookie['session'].value, None)
                 return self.reply(200, {})
             operations = {'/api/settings': features.save_settings, '/api/asset': features.upload_asset,
-                          '/api/product-edit': features.product_edit, '/api/expense': features.expense,
+                          '/api/product-edit': features.product_edit, '/api/expense': features.expense, '/api/expense-reverse': reliability.reverse_expense,
                           '/api/supplier': features.supplier, '/api/correction': features.correction}
             if path in operations:
                 return self.reply(200, operations[path](__import__(__name__), data))
