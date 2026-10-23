@@ -4,6 +4,8 @@ import hashlib
 import hmac
 import json
 import secrets
+import socket
+import ipaddress
 import sqlite3
 import ssl
 import time
@@ -24,6 +26,66 @@ SESSIONS = {}
 LOGIN_ATTEMPTS = {}
 AUTH_LOCK = threading.Lock()
 SESSION_SECONDS = 8 * 3600
+
+
+def get_local_ip():
+    """Find the outbound IPv4 address without sending data; fall back to hostname addresses."""
+    def usable(address):
+        try:
+            ip = ipaddress.IPv4Address(address)
+            return not (ip.is_loopback or ip.is_unspecified or ip.is_multicast or ip.is_link_local)
+        except ipaddress.AddressValueError:
+            return False
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+            probe.settimeout(0.5)
+            # UDP connect selects a local route; no packet is sent without send().
+            probe.connect(("192.0.2.1", 80))
+            address = probe.getsockname()[0]
+            if usable(address):
+                return address
+    except OSError:
+        pass
+    try:
+        for entry in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            address = entry[4][0]
+            if usable(address):
+                return address
+    except OSError:
+        pass
+    return "localhost"
+
+
+def connection_info(http_server):
+    # Cache for this server process; restart after changing Wi-Fi/network.
+    if not hasattr(http_server, "local_ip"):
+        http_server.local_ip = get_local_ip()
+    local_ip = http_server.local_ip
+    port = http_server.server_port
+    scheme = "https" if isinstance(http_server.socket, ssl.SSLSocket) else "http"
+    lan_url = f"{scheme}://{local_ip}:{port}/" if local_ip != "localhost" else None
+    return {
+        "ip": local_ip,
+        "port": port,
+        "phoneUrl": lan_url,
+        "laptopUrl": lan_url or f"{scheme}://localhost:{port}/",
+        "localhostUrl": f"{scheme}://localhost:{port}/",
+    }
+
+
+def print_startup_info(http_server):
+    info = connection_info(http_server)
+    print("Server running:")
+    print(f"  Laptop:  {info['localhostUrl']}")
+    if info["phoneUrl"]:
+        print("  OR use:")
+        print(f"  Laptop:  {info['laptopUrl']}")
+        print(f"  Phone:   {info['phoneUrl']}")
+        print("  Connect your phone and laptop to the same Wi-Fi/network.")
+    else:
+        print("  No LAN IP found. Connect to Wi-Fi/network and restart for phone access.")
+    print("  Ctrl+C to stop.", flush=True)
 
 
 def connect():
@@ -194,6 +256,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+        if path == '/api/info':
+            return self.reply(200, connection_info(self.server))
         if path == '/api/public-settings':
             return self.reply(200, features.settings(__import__(__name__), public=True))
         if path.startswith('/assets/'):
@@ -406,13 +470,9 @@ if __name__ == "__main__":
             )
             c.execute("INSERT INTO settings VALUES(?,?)", ("password", value))
     server = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
-    scheme = "http"
     if args.cert and args.key:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(args.cert, args.key)
         server.socket = context.wrap_socket(server.socket, server_side=True)
-        scheme = "https"
-    print(
-        f"ERP running: {scheme}://localhost:{args.port} | Phone: use this laptop Wi-Fi IP and same port. Ctrl+C to stop."
-    )
+    print_startup_info(server)
     server.serve_forever()
