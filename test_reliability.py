@@ -94,6 +94,11 @@ class ReliabilityTests(unittest.TestCase):
 
     def test_v1_migration_preserves_existing_data_and_backs_up_once(self):
         with server.connect() as c:
+            c.execute("DROP INDEX movements_reference")
+            c.execute("DROP TABLE payment_events")
+            c.execute("DROP TABLE invoice_accounts")
+            c.execute("DROP TABLE customers")
+            c.execute("DELETE FROM migrations WHERE version=3")
             c.execute("DROP TABLE request_receipts")
             c.execute("DROP TABLE expense_reversals")
             c.execute("DELETE FROM migrations WHERE version=2")
@@ -104,7 +109,7 @@ class ReliabilityTests(unittest.TestCase):
         after = set(Path(self.temp.name).glob("*.pre-v2-*.backup"))
         self.assertEqual(len(after - before), 1)
         with server.connect() as c:
-            self.assertEqual(c.execute("PRAGMA user_version").fetchone()[0], 2)
+            self.assertEqual(c.execute("PRAGMA user_version").fetchone()[0], 3)
             self.assertEqual(c.execute("SELECT stock FROM products").fetchone()[0], 100)
 
     def test_history_pagination_search_sort_and_snapshot_csv(self):

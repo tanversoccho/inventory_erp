@@ -37,7 +37,7 @@ def migrate(s):
     """Backup existing DB before additive v1 migration; SQLite rolls DDL back on failure."""
     with s.connect() as c:
         version = c.execute('PRAGMA user_version').fetchone()[0]
-        if version > 2:
+        if version > 3:
             raise RuntimeError('Database is newer than this application; use matching application version')
         if version >= 1:
             return
@@ -277,6 +277,7 @@ def correction(s, data):
 
 
 def report(s, query):
+    import payments
     config = settings(s)
     tz = zone(config)
     get = lambda key, default='': query.get(key, [default])[0]
@@ -383,7 +384,7 @@ def report(s, query):
     categories = [{'category': cat or '(Uncategorized)', **totals([r for r in rows if r['category'] == cat])} for cat in sorted({r['category'] for r in rows})]
     expense_categories = [{'category': cat, 'amount': sum(e['amount'] for e in selected_expenses if e['category'] == cat)} for cat in sorted({e['category'] for e in selected_expenses})]
     return dict(start=start.isoformat(), end=(end-dt.timedelta(days=1)).isoformat(), timezone=config['timezone'], currency=config['currency'],
-                branding={k: config[k] for k in ('app_name','company','report_header','report_footer')}, summary=summary, previous=previous, year_ago=yoy, daily=daily, monthly=monthly, products=performance, categories=categories,
+                payment_cash=None if filtered else payments.cash_summary(s, start.isoformat(), (end-dt.timedelta(days=1)).isoformat()), branding={k: config[k] for k in ('app_name','company','report_header','report_footer')}, summary=summary, previous=previous, year_ago=yoy, daily=daily, monthly=monthly, products=performance, categories=categories,
                 movements=rows, expenses=selected_expenses, expense_categories=expense_categories,
                 valuation=[{**p, 'value': p['stock']*p['cost']} for p in current_products],
                 low_stock=[p for p in current_products if p['stock'] <= p['minimum']],
@@ -402,6 +403,7 @@ def csv_report(data, table='movements'):
             'expenses': ['local_date','category','amount','payment_method','description','reference','payee'],
             'slow_moving': ['name','category','stock','units','sales'],
             'expense_categories': ['category','amount'],
+            'cash': list((data.get('payment_cash') or {}).keys()),
             'summary': list(data['summary'])}
     if table not in keys:
         raise ValueError('Invalid export table')
@@ -413,7 +415,9 @@ def csv_report(data, table='movements'):
     writer.writerow([safe(brand.get('company') or brand.get('app_name', '')), safe(brand.get('report_header', ''))])
     writer.writerow(['Period', data['start'], data['end'], 'Currency', data['currency'], 'Money values in minor units (100 = 1 currency unit)'])
     writer.writerow(keys[table])
-    rows = [data['summary']] if table == 'summary' else data[table]
+    if table == 'cash' and data.get('payment_cash') is None:
+        raise ValueError('Settlement cash export requires a whole-business report')
+    rows = [data['payment_cash']] if table == 'cash' else [data['summary']] if table == 'summary' else data[table]
     for row in rows:
         values = []
         for k in keys[table]:

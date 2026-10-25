@@ -33,7 +33,7 @@
           <button data-page="history">◷ &nbsp; Transactions</button>
         <button data-page="reports">Reports & analytics</button>
           <button data-page="expenses">Expenses</button><button data-page="suppliers">Suppliers</button>
-          <button data-page="settings">Settings</button></nav>
+          <button data-page="payments">Payments & dues</button><button data-page="settings">Settings</button></nav>
         <div class="aside-bottom">
           <p>● &nbsp; SQLite · Laptop database</p>
           <button id="backup">↓ Download backup</button>
@@ -105,6 +105,7 @@
         </section> 
         <section id="reports" class="page" hidden></section>
         <section id="expenses" class="page" hidden></section><section id="suppliers" class="page" hidden></section>
+        <section id="payments" class="page" hidden></section>
         <section id="settings" class="page" hidden></section>
         <section id="purchase" class="page" hidden></section>
         <section id="sale" class="page" hidden></section> 
@@ -212,6 +213,7 @@
     <dialog id="adminDialog"><div id="adminDialogContent"></div><button type="button" id="closeAdmin">Close</button></dialog>
     <script src="/scanner.min.js"></script>
     <script src="/upgrade.js"></script>
+    <script src="/payments-ui.js"></script>
     <script src="/app.js"></script>
   
   </body>

@@ -10,12 +10,14 @@
   const drafts = { purchase: null, sale: null };
   let supplierCache = null;
   function captureDrafts() {
+    window.paymentUI?.capture();
     for (const kind of ['purchase','sale']) {
       const payment=el('#'+kind+'Payment'), note=el('#'+kind+'Note');
       if (payment && note) drafts[kind]={payment_method:payment.value,note:note.value,supplier_id:kind==='purchase'?(el('#purchaseSupplier')?.dataset.ready==='true'?el('#purchaseSupplier').value:(drafts.purchase?.supplier_id||'')):''};
     }
   }
   function resetDraft(kind) {
+    window.paymentUI?.reset(kind);
     drafts[kind]=null;
     const payment=el('#'+kind+'Payment'), note=el('#'+kind+'Note');
     if(payment)payment.value=config.default_payment;
@@ -101,7 +103,7 @@
     try { el('#today').textContent = new Intl.DateTimeFormat(config.locale, {dateStyle:'medium',timeZone:config.timezone}).format(new Date()); } catch { /* Server validates timezone. */ }
   }
   media.addEventListener('change', apply);
-  async function load() { config = await request('settings'); apply(); }
+  async function load() { config = await request('settings'); apply(); window.paymentUI?.configure(config); }
   function table(id, rows, columns, target) {
     const state = paging[id] ||= {page:0, q:'',sort:0,desc:false};
     const keys = columns.map((c) => c[0]);
@@ -164,6 +166,7 @@
     el('#summaryCsv').onclick=()=>downloadReport('summary');
     el('#printReport').onclick=()=>{renderPrintTable();document.body.classList.add('print-report');window.print();document.body.classList.remove('print-report');};
     showReportTable();
+    window.paymentUI?.reportCash(d.payment_cash);
   }
   function renderPrintTable() {
     let target=el('#reportPrintTable');if(!target){target=document.createElement('div');target.id='reportPrintTable';el('#reportOutput').append(target);}
@@ -215,6 +218,7 @@
     const panel=el('#'+kind+' .panel:last-child');
     const draft=drafts[kind]||{payment_method:config.default_payment,note:config.default_note,supplier_id:''};
     const box=document.createElement('div');box.className='transaction-options';box.innerHTML=`<label>Payment method (label only; no payment collection)<select id="${kind}Payment">${options(config.payment_methods,draft.payment_method)}</select></label><label>Note<input id="${kind}Note" maxlength="1000" value="${escape(draft.note)}"></label>${kind==='purchase'?`<label>Supplier<select id="purchaseSupplier" data-ready="${supplierCache===null?'false':'true'}"><option value="">No supplier</option>${(supplierCache||[]).map((p)=>`<option value="${p.id}" ${String(p.id)===String(draft.supplier_id)?'selected':''}>${escape(p.name)}</option>`).join('')}</select></label>`:''}`;panel.prepend(box);
+    window.paymentUI?.attach(kind,box);
     box.addEventListener('input',captureDrafts);
     box.addEventListener('change',captureDrafts);
     const supplierSelect=kind==='purchase'?el('#purchaseSupplier'):null;
@@ -238,11 +242,13 @@
   async function invoice(reference) {
     const data=await request('invoice?reference='+encodeURIComponent(reference));
     const t=data.transaction;let total=0;
-    openDialog(`<div class="invoice"><img class="asset-preview" ${config.assets.business_logo||config.assets.logo?`src="${escape(config.assets.business_logo||config.assets.logo)}"`:'hidden'} alt="Business logo"><h2>${escape(config.company||config.app_name)}</h2><p>${escape(config.address)}<br>${escape(config.phone)} ${escape(config.email)}</p><p>${escape(config.tax_id)}</p><p>${escape(config.invoice_header)}</p><h3>${escape(t.kind)} · ${escape(reference)}</h3><p>${escape(date(t.created))} ${escape(time(t.created))} · ${escape(config.currency)}</p><div class="table-wrap"><table><thead><tr><th>Item</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead><tbody>${data.lines.map((r)=>{const value=r.quantity*r.unit_price;total+=value;return `<tr><td>${escape(r.name_snapshot)}</td><td>${r.quantity}</td><td>${escape(money(r.unit_price))}</td><td>${escape(money(value))}</td></tr>`;}).join('')}</tbody></table></div><h3>Total: ${escape(money(total))}</h3><p>${escape(t.note)}</p><p>Payment label: ${escape(t.payment_method)}. Payment collection is not tracked.</p><p>${escape(config.invoice_footer)}</p></div><button id="printInvoice">Print invoice / receipt</button>`);
+    openDialog(`<div class="invoice"><img class="asset-preview" ${config.assets.business_logo||config.assets.logo?`src="${escape(config.assets.business_logo||config.assets.logo)}"`:'hidden'} alt="Business logo"><h2>${escape(config.company||config.app_name)}</h2><p>${escape(config.address)}<br>${escape(config.phone)} ${escape(config.email)}</p><p>${escape(config.tax_id)}</p><p>${escape(config.invoice_header)}</p><h3>${escape(t.kind)} · ${escape(reference)}</h3><p>${escape(date(t.created))} ${escape(time(t.created))} · ${escape(config.currency)}</p><div class="table-wrap"><table><thead><tr><th>Item</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead><tbody>${data.lines.map((r)=>{const value=r.quantity*r.unit_price;total+=value;return `<tr><td>${escape(r.name_snapshot)}</td><td>${r.quantity}</td><td>${escape(money(r.unit_price))}</td><td>${escape(money(value))}</td></tr>`;}).join('')}</tbody></table></div><h3>Total: ${escape(money(total))}</h3><p>${escape(t.note)}</p><p>Preferred / initial payment method: ${escape(t.payment_method)}</p>${window.paymentUI?window.paymentUI.invoiceHTML(data.settlement):''}<p>${escape(config.invoice_footer)}</p></div><button id="printInvoice">Print invoice / receipt</button>`);
     el('#printInvoice').onclick=()=>{document.body.classList.add('print-invoice');window.print();document.body.classList.remove('print-invoice');};
   }
   document.addEventListener('click',async(e)=>{const button=e.target.closest('button');if(!button)return;try{if(button.dataset.editProduct)editProduct(button.dataset.editProduct);if(button.dataset.invoice)await invoice(button.dataset.invoice);if(button.dataset.reverseExpense)reverseExpense(button.dataset.reverseExpense);}catch(error){message(error.message,true);}});
   function afterRender(state,page) {
+    window.paymentUI?.dashboard(state.totals.settlements);
+    if(page==='payments')window.paymentUI?.renderPage();
     currentState=state;currentPage=page;
     if(!el('#fullBackup')){const b=document.createElement('button');b.id='fullBackup';b.textContent='Download full backup';el('.aside-bottom').prepend(b);b.onclick=async()=>{b.disabled=true;try{const response=await fetch('/api/backup-bundle');if(!response.ok)throw Error('Backup failed; sign in again');const link=document.createElement('a');link.href=URL.createObjectURL(await response.blob());link.download='inventory-full-backup.zip';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);}catch(error){message(error.message,true);}finally{b.disabled=false;}};}
     const metrics=Array.from(el('#metrics').children), map={purchases:metrics[0],sales:metrics[1],profit:metrics[2],stock:metrics[3]};
@@ -266,6 +272,6 @@
   el('#closeAdmin').onclick=()=>el('#adminDialog').close();
   el('#toggleNav').onclick=()=>{config.collapsed=!config.collapsed;apply();};
   el('#addProduct').addEventListener('click',()=>{const form=el('#productForm');form.elements.minimum.value=config.minimum;let units=el('#newProductUnit');if(!units){const label=document.createElement('label');label.textContent='Measurement unit (whole quantities)';units=document.createElement('select');units.id='newProductUnit';units.name='unit';label.append(units);form.insertBefore(label,el('#saveProduct'));}units.innerHTML=options(config.units,config.units[0]);form.elements.category.setAttribute('list','categoryChoices');let list=el('#categoryChoices');if(!list){list=document.createElement('datalist');list.id='categoryChoices';form.append(list);}list.innerHTML=options(config.categories);});
-  window.erp={load,money,afterRender,captureDrafts,resetDraft,exportHistory,transactionData:(kind)=>({payment_method:el('#'+kind+'Payment')?.value||config.default_payment,note:el('#'+kind+'Note')?.value||'',supplier_id:kind==='purchase'?el('#purchaseSupplier')?.value||null:null})};
+  window.erp={load,money,afterRender,table,exportReport:downloadReport,captureDrafts,resetDraft,exportHistory,transactionData:(kind)=>({payment_method:el('#'+kind+'Payment')?.value||config.default_payment,note:el('#'+kind+'Note')?.value||'',supplier_id:kind==='purchase'?el('#purchaseSupplier')?.value||null:null,...(window.paymentUI?window.paymentUI.data(kind):{})})};
   request('public-settings').then((data)=>{if(!config.app_name){config={...config,...data};apply();}}).catch((e)=>{el('#loginError').textContent=e.message;});
 })();

@@ -14,7 +14,7 @@ from pathlib import Path
 def migrate(s):
     with s.connect() as c:
         version=c.execute('PRAGMA user_version').fetchone()[0]
-        if version==2:return
+        if version in (2,3):return
         if version!=1:raise RuntimeError('Expected schema v1 before reliability migration')
         backup=Path(str(s.DB)+'.pre-v2-'+secrets.token_hex(4)+'.backup')
         with closing(sqlite3.connect(backup)) as target:c.backup(target)

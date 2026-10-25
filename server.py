@@ -12,6 +12,7 @@ import time
 import threading
 import erp_features as features
 import reliability
+import payments
 from db_connection import ManagedConnection
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -106,6 +107,7 @@ def initialize():
 
     features.migrate(__import__(__name__))
     reliability.migrate(__import__(__name__))
+    payments.migrate(__import__(__name__))
 
 
 def money(v):
@@ -173,6 +175,8 @@ def transaction(data):
                 "INSERT INTO movements(created,kind,product_id,quantity,unit_price,unit_cost,reference,actual_unit_cost,name_snapshot,category_snapshot) VALUES(?,?,?,?,?,?,?,?,?,?)",
                 (now, kind, p["id"], q, price, cost, ref, price if kind == 'purchase' else None, p['name'], p['category']),
             )
+        total = c.execute('SELECT coalesce(sum(quantity*unit_price),0) FROM movements WHERE reference=?', (ref,)).fetchone()[0]
+        payments.open_account(__import__(__name__), c, ref, data, total, kind, now)
         if request_id:
             c.execute('INSERT INTO request_receipts VALUES(?,?,?)', (request_id, digest, ref))
     return {"reference": ref}
@@ -225,6 +229,8 @@ def create_product(data):
         if not isinstance(custom, dict) or set(custom) - set(config['custom_fields']) or any(not isinstance(v, str) or len(v) > 500 for v in custom.values()):
             raise ValueError('Invalid custom fields')
         c.execute('UPDATE products SET unit=?,custom_json=? WHERE id=?', (unit, json.dumps(custom), cursor.lastrowid))
+        for initial in c.execute('SELECT reference FROM movements WHERE product_id=?', (cursor.lastrowid,)).fetchall():
+            payments.ensure_unconfirmed(c, initial['reference'])
     return {"code": code}
 
 
@@ -286,6 +292,22 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(200, result, 'text/csv; charset=utf-8') if path.endswith('.csv') else self.reply(200, result)
                 except (ValueError, OverflowError) as exc:
                     return self.reply(400, {'error': str(exc)})
+            if path == '/api/customers':
+                with connect() as c:
+                    return self.reply(200, [dict(row) for row in c.execute('SELECT * FROM customers ORDER BY name,id')])
+            if path in ('/api/payments', '/api/payments.csv', '/api/payment-account', '/api/party-statement'):
+                try:
+                    query = parse_qs(urlparse(self.path).query)
+                    if path == '/api/payments':
+                        return self.reply(200, payments.list_accounts(__import__(__name__), query))
+                    if path == '/api/payments.csv':
+                        return self.reply(200, payments.csv_accounts(__import__(__name__), query), 'text/csv; charset=utf-8')
+                    if path == '/api/party-statement':
+                        return self.reply(200, payments.statement(__import__(__name__), query))
+                    with connect() as c:
+                        return self.reply(200, payments.account(__import__(__name__), c, query.get('reference', [''])[0]))
+                except (ValueError, KeyError, TypeError, InvalidOperation) as exc:
+                    return self.reply(400, {'error': str(exc)})
             if path == '/api/settings':
                 return self.reply(200, features.settings(__import__(__name__)))
             if path in ('/api/reports', '/api/reports.csv'):
@@ -307,7 +329,9 @@ class Handler(BaseHTTPRequestHandler):
                     lines = [dict(r) for r in c.execute('SELECT * FROM movements WHERE reference=?', (ref,))]
                 if not header:
                     return self.reply(404, {'error': 'Transaction not found'})
-                return self.reply(200, {'transaction': dict(header), 'lines': lines, 'settings': features.settings(__import__(__name__))})
+                with connect() as c:
+                    settlement = payments.account(__import__(__name__), c, ref) if header['kind'] in ('sale', 'purchase') else None
+                return self.reply(200, {'transaction': dict(header), 'lines': lines, 'settings': features.settings(__import__(__name__)), 'settlement': settlement})
             if path == "/api/product-lookup":
                 code = parse_qs(urlparse(self.path).query).get("code", [""])[0]
                 return self.reply(200, online_lookup(code))
@@ -331,6 +355,7 @@ class Handler(BaseHTTPRequestHandler):
                                 sales=sales,
                                 profit=sales - cogs,
                                 stock=sum(p["stock"] * p["cost"] for p in products),
+                                settlements=payments.list_accounts(__import__(__name__))['summary'],
                             ),
                         ),
                     )
@@ -351,6 +376,7 @@ class Handler(BaseHTTPRequestHandler):
             "/scanner.min.js": ("scanner.min.js", "text/javascript"),
             "/upgrade.js": ("upgrade.js", "text/javascript"),
             "/upgrade.css": ("upgrade.css", "text/css"),
+            "/payments-ui.js": ("payments-ui.js", "text/javascript"),
         }
         if path not in files:
             return self.reply(404, {"error": "Not found"})
@@ -423,7 +449,7 @@ class Handler(BaseHTTPRequestHandler):
                 with AUTH_LOCK:
                     SESSIONS.pop(cookie['session'].value, None)
                 return self.reply(200, {})
-            operations = {'/api/settings': features.save_settings, '/api/asset': features.upload_asset,
+            operations = {'/api/customer': payments.customer, '/api/payment': payments.record, '/api/payment-confirm': payments.confirm_legacy, '/api/settings': features.save_settings, '/api/asset': features.upload_asset,
                           '/api/product-edit': features.product_edit, '/api/expense': features.expense, '/api/expense-reverse': reliability.reverse_expense,
                           '/api/supplier': features.supplier, '/api/correction': features.correction}
             if path in operations:

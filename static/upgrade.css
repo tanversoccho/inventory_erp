@@ -32,3 +32,10 @@ aside { overflow-y:auto; }nav { gap:4px; }nav button { padding:10px; }.logo { ma
 
 #reportPrintTable { display:none; }
 @media print { body.print-report #reportTableOutput { display:none; } body.print-report #reportPrintTable { display:block; } }
+
+/* Settlements remain separate from revenue/profit metrics. */
+.settlement-entry { margin:16px 0; }
+.settlement-entry legend { font-weight:700; }
+#payments .metrics,#settlementMetrics .metrics { grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); }
+#payments > .panel { margin:22px 0; }
+.settlement-print { border-top:1px solid var(--line); padding-top:12px; }

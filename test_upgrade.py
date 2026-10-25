@@ -45,7 +45,7 @@ class UpgradeTests(unittest.TestCase):
             c.executescript("CREATE TABLE products(id INTEGER PRIMARY KEY,code TEXT UNIQUE NOT NULL,name TEXT NOT NULL,category TEXT NOT NULL DEFAULT '',stock INTEGER NOT NULL DEFAULT 0 CHECK(stock>=0),cost INTEGER NOT NULL DEFAULT 0,price INTEGER NOT NULL DEFAULT 0,minimum INTEGER NOT NULL DEFAULT 5);CREATE TABLE movements(id INTEGER PRIMARY KEY,created TEXT NOT NULL,kind TEXT NOT NULL,product_id INTEGER NOT NULL REFERENCES products(id),quantity INTEGER NOT NULL,unit_price INTEGER NOT NULL,unit_cost INTEGER NOT NULL,reference TEXT NOT NULL);CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);INSERT INTO settings VALUES('password','keep-me');INSERT INTO products(code,name,stock,cost) VALUES('OLD','Old',5,1200);INSERT INTO movements(created,kind,product_id,quantity,unit_price,unit_cost,reference) VALUES('2025-12-31T23:00:00+06:00','purchase',1,5,1000,1200,'OLD-REF');")
         server.initialize();server.initialize()
         with server.connect() as c:
-            self.assertEqual(c.execute('PRAGMA user_version').fetchone()[0],2)
+            self.assertEqual(c.execute('PRAGMA user_version').fetchone()[0],3)
             self.assertEqual(c.execute('SELECT value FROM settings').fetchone()[0],'keep-me')
             row=c.execute('SELECT * FROM movements').fetchone()
             self.assertEqual(row['unit_cost'],1200);self.assertEqual(row['actual_unit_cost'],1000)
@@ -115,7 +115,7 @@ class UpgradeTests(unittest.TestCase):
     def test_schema_and_backup(self):
         target=Path(self.temp.name)/'from-schema.sqlite3'
         with closing(sqlite3.connect(target)) as c, c:
-            c.executescript((Path(__file__).parent/'schema.sql').read_text())
+            c.executescript((Path(__file__).parent/'schema.sql').read_text(encoding='utf-8'))
             self.assertEqual(c.execute('PRAGMA integrity_check').fetchone()[0],'ok')
         dest=Path(self.temp.name)/'backup.zip';backup(server.DB,dest)
         import zipfile

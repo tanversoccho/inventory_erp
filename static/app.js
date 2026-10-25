@@ -56,7 +56,7 @@ function go(p) {
     purchase: 'Purchase stock',
     sale: 'New sale',
     history: 'Transactions',
-    reports: 'Reports & analytics', expenses: 'Expenses', suppliers: 'Suppliers', settings: 'Settings',
+    payments: 'Payments & dues', reports: 'Reports & analytics', expenses: 'Expenses', suppliers: 'Suppliers', settings: 'Settings',
   }[p];
   render();
   if (window.erp) window.erp.afterRender(state, page);
@@ -133,9 +133,9 @@ function renderCart(kind) {
   updateTotal(kind);
 }
 function updateTotal(kind) {
-  $('#' + kind + 'Total').textContent = cash(
-    carts[kind].reduce((s, i) => s + Math.round(Number(i.price) * 100) * Number(i.quantity), 0),
-  );
+  const total = carts[kind].reduce((sum, item) => sum + Math.round(Number(item.price) * 100) * Number(item.quantity), 0);
+  $('#' + kind + 'Total').textContent = cash(total);
+  window.paymentUI?.update(kind, total);
 }
 function barcodeKey(code) {
   const s = String(code).trim();
@@ -688,3 +688,5 @@ async function decodePhotoCrop(out) {
   }
   throw Error('No readable code');
 }
+
+if (window.erp) window.erp.refresh = refresh;
