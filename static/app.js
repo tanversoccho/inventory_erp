@@ -5,6 +5,7 @@ const $ = (s) => document.querySelector(s),
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
     );
 let scanBusy = false;
+let cancelPhotoScan = false;
 let transactionBusy = false;
 let productBusy = false;
 const pendingRequests = { purchase: null, sale: null };
@@ -174,6 +175,10 @@ function openScan(target) {
   );
 }
 async function scanDone(code) {
+  if (scanTarget === 'remote') {
+    await window.scannerBridge.send(code);
+    return;
+  }
   if (scanTarget === 'product') {
     $('#productCode').value = code;
     lookupProduct();
@@ -305,7 +310,7 @@ $('#today').textContent = new Date().toLocaleDateString('en-GB', {
   month: 'long',
   year: 'numeric',
 });
-refresh().catch((e) => { if (!e.message.includes('sign in')) $('#loginError').textContent = e.message; });
+if (!window.scannerBridge?.isPhone) refresh().catch((e) => { if (!e.message.includes('sign in')) $('#loginError').textContent = e.message; });
 
 function lookupProduct() {
   const p = localProduct($('#productCode').value.trim());
@@ -557,6 +562,8 @@ $('#previewCrop').onclick = () => {
 $('#decodeCrop').onclick = async () => {
   if (scanBusy) return;
   setCropBusy(true);
+  cancelPhotoScan = false;
+  $('#stopPhotoScan').hidden = false;
   decodedCrop = null;
   $('#scanResult').hidden = true;
   $('#useScanResult').hidden = true;
@@ -571,18 +578,17 @@ $('#decodeCrop').onclick = async () => {
     $('#scanResult').hidden = false;
     $('#useScanResult').hidden = false;
     cropMessage('Code detected. Click Use decoded value to fill the product form.', 'success');
-  } catch {
-    cropMessage(
-      'No readable code detected, or the crop could not be decoded. Keep the complete code and a clear border, adjust the crop, and retry.',
-      'error',
-    );
+  } catch (error) {
+    cropMessage(error.message || 'Unable to decode this crop. Adjust the crop or retake the photo.', 'error');
   } finally {
     try {
       scanner?.clear();
     } catch { /* Keep crop for retry. */ }
+    $('#stopPhotoScan').hidden = true;
     setCropBusy(false);
   }
 };
+$('#stopPhotoScan').onclick = () => { cancelPhotoScan = true; cropMessage('Stopping after the current attempt…'); };
 $('#useScanResult').onclick = async () => {
   if (scanBusy || decodedCrop === null) return;
   const code = decodedCrop;
@@ -668,40 +674,42 @@ $('#productDialog').addEventListener('close', () => {
   $('#onlineLookup').disabled = false;
   $('#onlineLookup').textContent = 'Look up product online';
 });
-// Retry a failed crop with bounded resize/rotation variants, keeping the original unchanged.
+// Enhancement retries run on the scanning device, including paired phones.
 async function decodePhotoCrop(out) {
-  const variants = [
-    { angle: 0, scale: 1 },
-    { angle: 0, scale: Math.min(1, 1600 / Math.max(out.width, out.height)) },
-    { angle: 90, scale: Math.min(1, 2200 / Math.max(out.width, out.height)) },
-    { angle: 270, scale: Math.min(1, 2200 / Math.max(out.width, out.height)) },
-  ];
-  for (let i = 0; i < variants.length; i++) {
-    const { angle, scale } = variants[i];
-    if (i === 1 && scale === 1) continue;
-    cropMessage(`Reading crop locally… attempt ${i + 1}/${variants.length}`);
-    const c = document.createElement('canvas'),
-      w = Math.max(1, Math.round(out.width * scale)),
-      h = Math.max(1, Math.round(out.height * scale));
-    c.width = angle ? h : w;
-    c.height = angle ? w : h;
-    const ctx = c.getContext('2d');
-    ctx.translate(c.width / 2, c.height / 2);
-    ctx.rotate((angle * Math.PI) / 180);
-    ctx.drawImage(out, -w / 2, -h / 2, w, h);
+  return window.photoDecoder.decode(out, async (c) => {
     const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/png'));
-    if (!blob) continue;
+    if (!blob) throw Error('Unable to prepare barcode image');
     try {
-      const value = await scanner.scanFile(
-        new File([blob], 'product-crop.png', { type: 'image/png' }),
-        false,
-      );
-      if (value) return value;
-    } catch { /* Keep crop for retry. */ }
-    scanner.clear();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-  throw Error('No readable code');
+      return await scanner.scanFile(new File([blob], 'product-crop.png', { type: 'image/png' }), false);
+    } finally {
+      try { scanner.clear(); } catch { /* Keep the original crop. */ }
+    }
+  }, {
+    cancelled: () => cancelPhotoScan,
+    progress: (label, attempt, total) => cropMessage(`Reading locally: ${label} · attempt ${attempt}/${total}`),
+  });
 }
 
 if (window.erp) window.erp.refresh = refresh;
+window.erpScan = {
+  prepare(target) {
+    if (target === 'product') { go('inventory'); if (!$('#productDialog').open) $('#productDialog').showModal(); }
+    else { if ($('#productDialog').open) $('#productDialog').close(); go(target); }
+  },
+  async receive(code, target) {
+    if (document.hidden || $('#pairScannerDialog').open || $('#scanDialog').open || $('#adminDialog').open || transactionBusy || productBusy) return false;
+    if (target === 'product') {
+      if (!$('#productDialog').open) return false;
+      $('#productCode').value = code;
+      lookupProduct();
+      if (!localProduct(code)) await fetchProductOnline(code);
+    } else {
+      if (page !== target || $('#productDialog').open) return false;
+      $('#' + target + 'Code').value = code;
+      await findProduct(target);
+    }
+    notice('Phone scan received: ' + code + '. Review the item on this laptop.');
+    return true;
+  },
+  scanPhone() { openScan('remote'); }
+};

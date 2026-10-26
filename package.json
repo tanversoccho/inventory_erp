@@ -4,7 +4,7 @@
   "description": "A working local web application. One laptop runs a Python server and keeps a real SQLite database. Laptop and phone browsers share the same records. No cloud account or paid database required. This is an inventory and sales MVP, not a full accounting/payroll ERP.",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint static/app.js static/upgrade.js static/payments-ui.js",
+    "lint": "eslint static/app.js static/upgrade.js static/payments-ui.js static/scanner-sync.js static/photo-decoder.js",
     "test": "python -m unittest discover -v",
     "start": "python server.py",
     "demo:seed": "python create_sample_database.py demo/sample_12_months.sqlite3",

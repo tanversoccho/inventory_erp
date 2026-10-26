@@ -8,6 +8,7 @@ export default [
       "data/**",
       "**/__pycache__/**",
       "static/scanner.min.js",
+      "static/pair-qr.js",
     ],
   },
   {

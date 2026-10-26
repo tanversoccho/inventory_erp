@@ -13,6 +13,7 @@ import threading
 import erp_features as features
 import reliability
 import payments
+import scanner_sync
 from db_connection import ManagedConnection
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -371,6 +372,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(404, {"error": "Not found"})
         files = {
             "/": ("index.html", "text/html; charset=utf-8"),
+            "/scan-phone": ("index.html", "text/html; charset=utf-8"),
+            "/scanner-sync.js": ("scanner-sync.js", "text/javascript"),
+            "/pair-qr.js": ("pair-qr.js", "text/javascript"),
+            "/photo-decoder.js": ("photo-decoder.js", "text/javascript"),
             "/app.js": ("app.js", "text/javascript"),
             "/style.css": ("style.css", "text/css"),
             "/scanner.min.js": ("scanner.min.js", "text/javascript"),
@@ -398,6 +403,14 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(data, dict):
                 raise ValueError('Expected a JSON object')
             path = urlparse(self.path).path
+            if path.startswith('/api/scanner/'):
+                action = path.removeprefix('/api/scanner/')
+                if action not in ('connect', 'send', 'status') and not self.authorized():
+                    return self.reply(401, {'error': 'Please sign in'})
+                try:
+                    return self.reply(200, scanner_sync.BROKER.handle(__import__(__name__), self, action, data))
+                except scanner_sync.ScanError as exc:
+                    return self.reply(exc.status, {'error': str(exc)})
             if path == "/api/login":
                 ip = self.client_address[0]
                 with AUTH_LOCK:

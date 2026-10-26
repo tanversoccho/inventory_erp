@@ -24,7 +24,7 @@ const port=new Promise((resolve,reject)=>{lines.once('line',(line)=>resolve(JSON
  const submit=(s)=>{const form=d.querySelector(s);assert(form,s);form.dispatchEvent(new w.SubmitEvent('submit',{cancelable:true,submitter:form.querySelector('button:not([type="button"])')}));};
  async function openAccount(ref){await until(()=>d.querySelector('[data-table-search="dues"]'),'dues search');const input=d.querySelector('[data-table-search="dues"]');input.value=ref;input.dispatchEvent(new w.Event('input',{bubbles:true}));await until(()=>d.querySelector('[data-account="'+ref+'"]'),'searched invoice');click('[data-account="'+ref+'"]');}
  const query=async(s)=>{const response=await w.fetch('/api/'+s);assert(response.ok,s);return response.json();};
- await until(()=>w.erp&&w.paymentUI,'startup');d.querySelector('#password').value=password;submit('#loginForm');await until(()=>!d.querySelector('#workspace').hidden,'login');
+ await until(()=>w.erp&&w.paymentUI&&w.erpScan,'startup');d.querySelector('#password').value=password;submit('#loginForm');await until(()=>!d.querySelector('#workspace').hidden,'login');
  assert(d.querySelector('#settlementMetrics').textContent.includes('Customers owe you'));
  click('[data-page="sale"]');click('#quickCustomer');d.querySelector('#customerForm').elements.name.value='Customer Credit';d.querySelector('#customerForm').elements.phone.value='01001';submit('#customerForm');await until(()=>!d.querySelector('#adminDialog').open,'new customer');assert.equal(d.querySelector('#saleCustomer').value,'1');
  d.querySelector('#saleSelect').value='1';click('[data-add="sale"]');const quantity=d.querySelector('[data-edit="sale:0:quantity"]');quantity.value='5';quantity.dispatchEvent(new w.Event('input',{bubbles:true}));
