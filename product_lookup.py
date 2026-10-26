@@ -4,7 +4,7 @@ import json
 import re
 import time
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 from urllib.request import Request, urlopen
 
 _CACHE = {}
@@ -24,6 +24,16 @@ def read_json(url):
 
 def online_lookup(code):
     code = str(code).strip()
+    # Extract only the GTIN, never fetch an arbitrary scanned URL.
+    if code.lower().startswith(("https://", "http://")):
+        try:
+            match = re.search(r"/01/([0-9]{14})(?:/|$)", urlsplit(code).path)
+        except ValueError:
+            match = None
+        if match:
+            code = match.group(1)
+        else:
+            return {"found": False, "message": "This QR code contains a website link, not a retail product barcode. Scan the striped EAN/UPC barcode or enter its printed digits. You can also save this QR value locally with a product name; future scans will find it."}
     if not re.fullmatch(r"[0-9]{8}|[0-9]{12,14}", code):
         return {
             "found": False,

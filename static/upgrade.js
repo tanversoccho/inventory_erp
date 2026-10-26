@@ -249,6 +249,7 @@
   function afterRender(state,page) {
     window.paymentUI?.dashboard(state.totals.settlements);
     if(page==='payments')window.paymentUI?.renderPage();
+    if(page==='customers')window.paymentUI?.renderCustomers();
     currentState=state;currentPage=page;
     if(!el('#fullBackup')){const b=document.createElement('button');b.id='fullBackup';b.textContent='Download full backup';el('.aside-bottom').prepend(b);b.onclick=async()=>{b.disabled=true;try{const response=await fetch('/api/backup-bundle');if(!response.ok)throw Error('Backup failed; sign in again');const link=document.createElement('a');link.href=URL.createObjectURL(await response.blob());link.download='inventory-full-backup.zip';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);}catch(error){message(error.message,true);}finally{b.disabled=false;}};}
     const metrics=Array.from(el('#metrics').children), map={purchases:metrics[0],sales:metrics[1],profit:metrics[2],stock:metrics[3]};

@@ -49,6 +49,20 @@ class LookupTests(unittest.TestCase):
         with patch.object(lookup, "read_json", side_effect=TimeoutError):
             self.assertIn("unavailable", lookup.online_lookup("123456789012")["message"])
 
+    def test_short_qr_explains_retail_barcode(self):
+        with patch.object(lookup, "read_json") as request:
+            result = lookup.online_lookup("https://qrco.de/bcgT17")
+            self.assertFalse(result["found"])
+            self.assertIn("striped EAN/UPC", result["message"])
+            request.assert_not_called()
+
+    def test_gs1_extracts_gtin_without_fetching_url(self):
+        with patch.object(lookup, "read_json", return_value={"status": 1, "product": {"product_name": "Test food"}}) as request:
+            result = lookup.online_lookup("https://example.com/01/09520123456788/10/LOT")
+            self.assertTrue(result["found"])
+            self.assertEqual(result["code"], "09520123456788")
+            self.assertTrue(request.call_args.args[0].startswith("https://world.openfoodfacts.org/"))
+
     def test_qr_url_not_fetched(self):
         with patch.object(lookup, "read_json") as request:
             self.assertFalse(lookup.online_lookup("https://example.com/")["found"])

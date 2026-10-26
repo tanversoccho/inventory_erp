@@ -56,7 +56,7 @@ function go(p) {
     purchase: 'Purchase stock',
     sale: 'New sale',
     history: 'Transactions',
-    payments: 'Payments & dues', reports: 'Reports & analytics', expenses: 'Expenses', suppliers: 'Suppliers', settings: 'Settings',
+    customers: 'Customers', payments: 'Payments & dues', reports: 'Reports & analytics', expenses: 'Expenses', suppliers: 'Suppliers', settings: 'Settings',
   }[p];
   render();
   if (window.erp) window.erp.afterRender(state, page);
@@ -326,11 +326,26 @@ function lookupProduct() {
     $('#saveProduct').disabled = false;
   }
 }
+let productLookupTimer;
 $('#productCode').addEventListener('input', () => {
   onlineRequestId++;
+  $('#onlineLookup').disabled = false;
+  $('#onlineLookup').textContent = 'Look up product online';
   lookupProduct();
+  clearTimeout(productLookupTimer);
+  productLookupTimer = setTimeout(() => {
+    if ($('#productDialog').open) fetchProductOnline($('#productCode').value.trim());
+  }, 650);
+});
+$('#productCode').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    clearTimeout(productLookupTimer);
+    fetchProductOnline($('#productCode').value.trim());
+  }
 });
 $('#productDialog').addEventListener('close', () => {
+  clearTimeout(productLookupTimer);
   $('#productForm').reset();
   $('#productLookup').textContent = '';
   $('#saveProduct').disabled = false;
@@ -581,10 +596,10 @@ $('#scanDialog').addEventListener('cancel', (e) => {
   if (scanBusy) e.preventDefault();
 });
 
-let onlineRequestId = 0,
-  onlineBusy = false;
+let onlineRequestId = 0;
 function openNewProduct(code) {
   if (!$('#productDialog').open) {
+    clearTimeout(productLookupTimer);
     $('#productForm').reset();
     $('#productDialog').showModal();
   }
@@ -592,10 +607,8 @@ function openNewProduct(code) {
   lookupProduct();
 }
 async function fetchProductOnline(code) {
-  if (onlineBusy) {
-    $('#productLookup').textContent = 'A lookup is already running. Please wait, then retry.';
-    return;
-  }
+  // A newer scan may supersede an older request; only the latest may fill fields.
+  clearTimeout(productLookupTimer);
   if (!code) {
     $('#productLookup').textContent = 'Enter a barcode number first.';
     return;
@@ -606,7 +619,6 @@ async function fetchProductOnline(code) {
     return;
   }
   const requestId = ++onlineRequestId;
-  onlineBusy = true;
   const button = $('#onlineLookup');
   button.disabled = true;
   button.textContent = 'Searching online…';
@@ -643,15 +655,18 @@ async function fetchProductOnline(code) {
       $('#productLookup').textContent =
         'Online lookup failed. Check laptop internet, retry, or enter the name manually.';
   } finally {
-    onlineBusy = false;
-    button.disabled = false;
-    button.textContent = 'Look up product online';
-    save.disabled = !!localProduct($('#productCode').value.trim());
+    if (requestId === onlineRequestId) {
+      button.disabled = false;
+      button.textContent = 'Look up product online';
+      save.disabled = !!localProduct($('#productCode').value.trim());
+    }
   }
 }
 $('#onlineLookup').onclick = () => fetchProductOnline($('#productCode').value.trim());
 $('#productDialog').addEventListener('close', () => {
   onlineRequestId++;
+  $('#onlineLookup').disabled = false;
+  $('#onlineLookup').textContent = 'Look up product online';
 });
 // Retry a failed crop with bounded resize/rotation variants, keeping the original unchanged.
 async function decodePhotoCrop(out) {
