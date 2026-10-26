@@ -18,7 +18,7 @@ def read_json(url):
             "Accept": "application/json",
         },
     )
-    with urlopen(request, timeout=8) as response:
+    with urlopen(request, timeout=20) as response:
         return json.loads(response.read(1024 * 1024))
 
 
