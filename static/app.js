@@ -1,7 +1,7 @@
 const $ = (s) => document.querySelector(s),
   esc = (v) =>
-  String(v).replace(
-    /[&<>"']/g,
+    String(v).replace(
+      /[&<>"']/g,
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
     );
 let scanBusy = false;
@@ -14,17 +14,17 @@ let state,
   carts = { purchase: [], sale: [] },
   scanner,
   scanTarget;
-const cash = (n) => window.erp ? window.erp.money(n) : (n / 100).toFixed(2);
+const cash = (n) => (window.erp ? window.erp.money(n) : (n / 100).toFixed(2));
 async function api(path, data) {
   const r = await fetch(
     '/api/' + path,
     data
-    ? {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    }
-    : {},
+      ? {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }
+      : {},
   );
   const v = await r.json();
   if (!r.ok) throw Error(v.error || 'Request failed');
@@ -57,7 +57,12 @@ function go(p) {
     purchase: 'Purchase stock',
     sale: 'New sale',
     history: 'Transactions',
-    customers: 'Customers', payments: 'Payments & dues', reports: 'Reports & analytics', expenses: 'Expenses', suppliers: 'Suppliers', settings: 'Settings',
+    customers: 'Customers',
+    payments: 'Payments & dues',
+    reports: 'Reports & analytics',
+    expenses: 'Expenses',
+    suppliers: 'Suppliers',
+    settings: 'Settings',
   }[p];
   render();
   if (window.erp) window.erp.afterRender(state, page);
@@ -65,11 +70,11 @@ function go(p) {
 function activity(rows) {
   return rows.length
     ? rows
-    .map(
-      (r) =>
-      `<div class="activity"><div><b>${esc(r.name)}</b><small>${esc(r.kind)} · ${r.quantity} units · ${esc(r.created.slice(0, 10))}</small></div><b>${cash(r.quantity * r.unit_price)}</b></div>`,
-    )
-    .join('')
+        .map(
+          (r) =>
+            `<div class="activity"><div><b>${esc(r.name)}</b><small>${esc(r.kind)} · ${r.quantity} units · ${esc(r.created.slice(0, 10))}</small></div><b>${cash(r.quantity * r.unit_price)}</b></div>`,
+        )
+        .join('')
     : '<div class="empty">No transactions yet. Add a product and record your first purchase.</div>';
 }
 function render() {
@@ -82,39 +87,39 @@ function render() {
   ]
     .map(
       (a) =>
-      `<article class="metric"><small>${a[0]}</small><strong>${cash(a[1])}</strong><p>${a[2]}</p></article>`,
+        `<article class="metric"><small>${a[0]}</small><strong>${cash(a[1])}</strong><p>${a[2]}</p></article>`,
     )
     .join('');
   $('#recent').innerHTML = activity(state.history.slice(0, 5));
   const low = state.products.filter((p) => p.stock <= p.minimum);
   $('#alerts').innerHTML = low.length
     ? low
-    .map(
-      (p) =>
-      `<div class="activity"><div><b>${esc(p.name)}</b><small>${esc(p.code)}</small></div><span class="badge low">${p.stock} left</span></div>`,
-    )
-    .join('')
+        .map(
+          (p) =>
+            `<div class="activity"><div><b>${esc(p.name)}</b><small>${esc(p.code)}</small></div><span class="badge low">${p.stock} left</span></div>`,
+        )
+        .join('')
     : '<div class="empty">All products are above their stock alerts.</div>';
   renderProducts();
   $('#ledger').innerHTML =
     state.history
-    .map(
-      (r) =>
-      `<tr><td>${esc(r.created.replace('T', ' ').slice(0, 19))}<small>${esc(r.reference)}</small></td><td><span class="badge ${r.kind === 'purchase' ? 'low' : ''}">${r.kind}</span></td><td>${esc(r.name)}<small>${esc(r.code)}</small></td><td>${r.quantity}</td><td>${cash(r.unit_price)}</td><td>${cash(r.quantity * r.unit_price)}</td></tr>`,
-    )
-    .join('') || '<tr><td colspan="6">No transactions recorded.</td></tr>';
+      .map(
+        (r) =>
+          `<tr><td>${esc(r.created.replace('T', ' ').slice(0, 19))}<small>${esc(r.reference)}</small></td><td><span class="badge ${r.kind === 'purchase' ? 'low' : ''}">${r.kind}</span></td><td>${esc(r.name)}<small>${esc(r.code)}</small></td><td>${r.quantity}</td><td>${cash(r.unit_price)}</td><td>${cash(r.quantity * r.unit_price)}</td></tr>`,
+      )
+      .join('') || '<tr><td colspan="6">No transactions recorded.</td></tr>';
   for (const kind of ['purchase', 'sale']) renderTransaction(kind);
 }
 function renderProducts() {
   let q = $('#search').value.toLowerCase();
   $('#products').innerHTML =
     state.products
-    .filter((p) => (p.name + ' ' + p.code + ' ' + p.category).toLowerCase().includes(q))
-    .map(
-      (p) =>
-      `<tr><td><b>${esc(p.name)}</b><small>${esc(p.code)}</small></td><td>${esc(p.category) || '—'}</td><td>${p.stock}</td><td>${cash(p.cost)}</td><td>${cash(p.price)}</td><td><span class="badge ${p.stock <= p.minimum ? 'low' : ''}">${p.stock <= p.minimum ? 'Low stock' : 'In stock'}</span></td></tr>`,
-    )
-    .join('') ||
+      .filter((p) => (p.name + ' ' + p.code + ' ' + p.category).toLowerCase().includes(q))
+      .map(
+        (p) =>
+          `<tr><td><b>${esc(p.name)}</b><small>${esc(p.code)}</small></td><td>${esc(p.category) || '—'}</td><td>${p.stock}</td><td>${cash(p.cost)}</td><td>${cash(p.price)}</td><td><span class="badge ${p.stock <= p.minimum ? 'low' : ''}">${p.stock <= p.minimum ? 'Low stock' : 'In stock'}</span></td></tr>`,
+      )
+      .join('') ||
     '<tr><td colspan="6">No products found. Add your first product to begin.</td></tr>';
 }
 function renderTransaction(kind) {
@@ -126,15 +131,18 @@ function renderTransaction(kind) {
 function renderCart(kind) {
   $('#' + kind + 'Cart').innerHTML =
     carts[kind]
-    .map(
-      (item, i) =>
-      `<div class="cart-row"><div class="section-head"><b>${esc(state.products.find((p) => p.id === item.id).name)}</b><button class="text" data-remove="${kind}:${i}">Remove</button></div><div class="two"><label>Quantity<input type="number" min="1" step="1" value="${item.quantity}" data-edit="${kind}:${i}:quantity"></label><label>Unit ${kind === 'sale' ? 'selling price' : 'purchase cost'} (BDT)<input type="number" min="0" step="0.01" value="${item.price}" data-edit="${kind}:${i}:price"></label></div></div>`,
-    )
-    .join('') || '<p class="empty">Your list is empty.</p>';
+      .map(
+        (item, i) =>
+          `<div class="cart-row"><div class="section-head"><b>${esc(state.products.find((p) => p.id === item.id).name)}</b><button class="text" data-remove="${kind}:${i}">Remove</button></div><div class="two"><label>Quantity<input type="number" min="1" step="1" value="${item.quantity}" data-edit="${kind}:${i}:quantity"></label><label>Unit ${kind === 'sale' ? 'selling price' : 'purchase cost'} (BDT)<input type="number" min="0" step="0.01" value="${item.price}" data-edit="${kind}:${i}:price"></label></div></div>`,
+      )
+      .join('') || '<p class="empty">Your list is empty.</p>';
   updateTotal(kind);
 }
 function updateTotal(kind) {
-  const total = carts[kind].reduce((sum, item) => sum + Math.round(Number(item.price) * 100) * Number(item.quantity), 0);
+  const total = carts[kind].reduce(
+    (sum, item) => sum + Math.round(Number(item.price) * 100) * Number(item.quantity),
+    0,
+  );
   $('#' + kind + 'Total').textContent = cash(total);
   window.paymentUI?.update(kind, total);
 }
@@ -170,8 +178,8 @@ function openScan(target) {
   setCropBusy(false);
   cropMessage(
     cropPhoto
-    ? 'Photo retained. Adjust the selection or take another photo.'
-    : 'Take a photo, select the code, then preview and scan.',
+      ? 'Photo retained. Adjust the selection or take another photo.'
+      : 'Take a photo, select the code, then preview and scan.',
   );
 }
 async function scanDone(code) {
@@ -217,12 +225,19 @@ document.addEventListener('click', async (e) => {
       const k = b.dataset.save;
       if (!carts[k].length) throw Error('Add at least one product');
       b.disabled = true;
-      const payload = { kind: k, items: carts[k], ...(window.erp ? window.erp.transactionData(k) : {}) };
+      const payload = {
+        kind: k,
+        items: carts[k],
+        ...(window.erp ? window.erp.transactionData(k) : {}),
+      };
       const body = JSON.stringify(payload);
       if (!pendingRequests[k] || pendingRequests[k].body !== body) {
         const bytes = new Uint8Array(24);
         crypto.getRandomValues(bytes);
-        pendingRequests[k] = { body, key: Array.from(bytes, (v) => v.toString(16).padStart(2, '0')).join('') };
+        pendingRequests[k] = {
+          body,
+          key: Array.from(bytes, (v) => v.toString(16).padStart(2, '0')).join(''),
+        };
       }
       const result = await api('transaction', { ...payload, request_id: pendingRequests[k].key });
       pendingRequests[k] = null;
@@ -299,18 +314,25 @@ $('#backup').onclick = async () => {
   try {
     const r = await fetch('/api/backup');
     if (!r.ok) throw Error('Backup failed; sign in again');
-    download(await r.blob(), 'inventory-backup-' + new Date().toISOString().slice(0, 10) + '.sqlite3');
+    download(
+      await r.blob(),
+      'inventory-backup-' + new Date().toISOString().slice(0, 10) + '.sqlite3',
+    );
   } catch (e) {
     notice(e.message, true);
   }
 };
-$('#export').onclick = () => window.erp.exportHistory().catch((error) => notice(error.message, true));
+$('#export').onclick = () =>
+  window.erp.exportHistory().catch((error) => notice(error.message, true));
 $('#today').textContent = new Date().toLocaleDateString('en-GB', {
   day: 'numeric',
   month: 'long',
   year: 'numeric',
 });
-if (!window.scannerBridge?.isPhone) refresh().catch((e) => { if (!e.message.includes('sign in')) $('#loginError').textContent = e.message; });
+if (!window.scannerBridge?.isPhone)
+  refresh().catch((e) => {
+    if (!e.message.includes('sign in')) $('#loginError').textContent = e.message;
+  });
 
 function lookupProduct() {
   const p = localProduct($('#productCode').value.trim());
@@ -539,12 +561,12 @@ for (const edge of ['left', 'right', 'top', 'bottom'])
       gap = 0.002;
     cropBox[edge] =
       edge === 'left'
-      ? Math.min(value, cropBox.right - gap)
-      : edge === 'right'
-      ? Math.max(value, cropBox.left + gap)
-      : edge === 'top'
-      ? Math.min(value, cropBox.bottom - gap)
-      : Math.max(value, cropBox.top + gap);
+        ? Math.min(value, cropBox.right - gap)
+        : edge === 'right'
+          ? Math.max(value, cropBox.left + gap)
+          : edge === 'top'
+            ? Math.min(value, cropBox.bottom - gap)
+            : Math.max(value, cropBox.top + gap);
     cropChanged();
   };
 $('#resetCrop').onclick = () => {
@@ -579,16 +601,24 @@ $('#decodeCrop').onclick = async () => {
     $('#useScanResult').hidden = false;
     cropMessage('Code detected. Click Use decoded value to fill the product form.', 'success');
   } catch (error) {
-    cropMessage(error.message || 'Unable to decode this crop. Adjust the crop or retake the photo.', 'error');
+    cropMessage(
+      error.message || 'Unable to decode this crop. Adjust the crop or retake the photo.',
+      'error',
+    );
   } finally {
     try {
       scanner?.clear();
-    } catch { /* Keep crop for retry. */ }
+    } catch {
+      /* Keep crop for retry. */
+    }
     $('#stopPhotoScan').hidden = true;
     setCropBusy(false);
   }
 };
-$('#stopPhotoScan').onclick = () => { cancelPhotoScan = true; cropMessage('Stopping after the current attempt…'); };
+$('#stopPhotoScan').onclick = () => {
+  cancelPhotoScan = true;
+  cropMessage('Stopping after the current attempt…');
+};
 $('#useScanResult').onclick = async () => {
   if (scanBusy || decodedCrop === null) return;
   const code = decodedCrop;
@@ -676,28 +706,53 @@ $('#productDialog').addEventListener('close', () => {
 });
 // Enhancement retries run on the scanning device, including paired phones.
 async function decodePhotoCrop(out) {
-  return window.photoDecoder.decode(out, async (c) => {
-    const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/png'));
-    if (!blob) throw Error('Unable to prepare barcode image');
-    try {
-      return await scanner.scanFile(new File([blob], 'product-crop.png', { type: 'image/png' }), false);
-    } finally {
-      try { scanner.clear(); } catch { /* Keep the original crop. */ }
-    }
-  }, {
-    cancelled: () => cancelPhotoScan,
-    progress: (label, attempt, total) => cropMessage(`Reading locally: ${label} · attempt ${attempt}/${total}`),
-  });
+  return window.photoDecoder.decode(
+    out,
+    async (c) => {
+      const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/png'));
+      if (!blob) throw Error('Unable to prepare barcode image');
+      try {
+        return await scanner.scanFile(
+          new File([blob], 'product-crop.png', { type: 'image/png' }),
+          false,
+        );
+      } finally {
+        try {
+          scanner.clear();
+        } catch {
+          /* Keep the original crop. */
+        }
+      }
+    },
+    {
+      cancelled: () => cancelPhotoScan,
+      progress: (label, attempt, total) =>
+        cropMessage(`Reading locally: ${label} · attempt ${attempt}/${total}`),
+    },
+  );
 }
 
 if (window.erp) window.erp.refresh = refresh;
 window.erpScan = {
   prepare(target) {
-    if (target === 'product') { go('inventory'); if (!$('#productDialog').open) $('#productDialog').showModal(); }
-    else { if ($('#productDialog').open) $('#productDialog').close(); go(target); }
+    if (target === 'product') {
+      go('inventory');
+      if (!$('#productDialog').open) $('#productDialog').showModal();
+    } else {
+      if ($('#productDialog').open) $('#productDialog').close();
+      go(target);
+    }
   },
   async receive(code, target) {
-    if (document.hidden || $('#pairScannerDialog').open || $('#scanDialog').open || $('#adminDialog').open || transactionBusy || productBusy) return false;
+    if (
+      document.hidden ||
+      $('#pairScannerDialog').open ||
+      $('#scanDialog').open ||
+      $('#adminDialog').open ||
+      transactionBusy ||
+      productBusy
+    )
+      return false;
     if (target === 'product') {
       if (!$('#productDialog').open) return false;
       $('#productCode').value = code;
@@ -711,5 +766,7 @@ window.erpScan = {
     notice('Phone scan received: ' + code + '. Review the item on this laptop.');
     return true;
   },
-  scanPhone() { openScan('remote'); }
+  scanPhone() {
+    openScan('remote');
+  },
 };

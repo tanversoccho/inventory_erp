@@ -1,58 +1,135 @@
 /* Actual browser regression: starts its own temporary database/server. */
-const {chromium}=require('playwright');
-const {spawn}=require('node:child_process');
-const {createInterface}=require('node:readline');
-const {randomBytes}=require('node:crypto');
-const assert=require('node:assert/strict');
-const path=require('node:path');
-const password=randomBytes(24).toString('hex');
-const python=process.env.PYTHON_EXECUTABLE||'python';
-const child=spawn(python,[path.join(__dirname,'browser_fixture.py')],{cwd:__dirname,env:{...process.env,ERP_TEST_PASSWORD:password},stdio:['ignore','pipe','pipe']});
-const lines=createInterface({input:child.stdout});let browser;
-const port=new Promise((resolve,reject)=>{lines.once('line',(s)=>{try{resolve(JSON.parse(s).port);}catch(e){reject(e);}});child.once('error',reject);child.once('exit',(code)=>reject(Error('Fixture exited '+code)));});
-(async()=>{
- const base='http://127.0.0.1:'+await port;
- browser=await chromium.launch({headless:true});
- const page=await browser.newPage();const errors=[];page.on('pageerror',(e)=>errors.push(e.message));
- const wait=async(fn)=>page.waitForFunction(fn);
- await page.goto(base);
- await wait(()=>!!window.erp); // Real parser order, no eval after parsing.
- await page.fill('#password',password);await page.click('#loginForm button');
- await page.waitForSelector('#workspace:not([hidden])');
- await page.click('[data-page="purchase"]');await page.waitForSelector('#purchaseSupplier option[value="1"]');
- await page.selectOption('#purchaseSupplier','1');await page.selectOption('#purchasePayment','Bank');await page.fill('#purchaseNote','Retain this draft');
- await page.selectOption('#purchaseSelect','1');await page.click('[data-add="purchase"]');
- await page.click('[data-page="inventory"]');await page.click('[data-page="purchase"]');
- await wait(()=>document.querySelector('#purchaseSupplier').value==='1');
- assert.equal(await page.inputValue('#purchaseNote'),'Retain this draft');assert.equal(await page.inputValue('#purchasePayment'),'Bank');
- await page.click('[data-save="purchase"]');await wait(()=>document.querySelector('#notice').textContent.includes('PUR-'));
- const ref=(await page.textContent('#notice')).split('Reference: ')[1];
- const invoice=await page.evaluate(async(ref)=>fetch('/api/invoice?reference='+ref).then((r)=>r.json()),ref);
- assert.equal(invoice.transaction.supplier_id,1);assert.equal(invoice.transaction.note,'Retain this draft');assert.equal(invoice.transaction.payment_method,'Bank');
- await page.click('[data-page="reports"]');await page.waitForSelector('#reportForm');
- await page.fill('#reportForm input[name="month"]','2026-09');await page.click('#reportForm button[type="submit"],#reportForm button:not([type])');
- await wait(()=>document.querySelector('#reportStatus').textContent.includes('2026-09-01'));
- await page.fill('#reportForm input[name="month"]','2026-08');
- const csv=page.waitForResponse((r)=>r.url().includes('/api/reports.csv'));
- await page.click('#reportCsv');const exported=await csv;
- assert.equal(new URL(exported.url()).searchParams.get('month'),'2026-09');
- await page.click('[data-page="history"]');await page.waitForSelector('#historyNext:not([disabled])');
- const before=await page.locator('#historyEnhanced tbody tr').first().textContent();await page.click('#historyNext');
- await wait(()=>document.querySelector('#historyEnhanced').textContent.includes('Page 2 /'));
- assert.notEqual(await page.locator('#historyEnhanced tbody tr').first().textContent(),before);
- const payloads=[];let abortFirst=true;
- await page.route('**/api/transaction',async(route)=>{payloads.push(route.request().postDataJSON());const response=await route.fetch();if(abortFirst){abortFirst=false;await route.abort('failed');}else await route.fulfill({response});});
- const stockBefore=await page.evaluate(async()=>fetch('/api/state').then((r)=>r.json()).then((s)=>s.products[0].stock));
- await page.click('[data-page="sale"]');await page.selectOption('#saleSelect','1');await page.click('[data-add="sale"]');
- await page.click('[data-save="sale"]');await wait(()=>document.querySelector('#notice').className==='error');
- await page.click('[data-save="sale"]');await wait(()=>document.querySelector('#notice').textContent.includes('INV-'));
- assert.equal(payloads.length,2);assert.equal(payloads[0].request_id,payloads[1].request_id);
- const stockAfter=await page.evaluate(async()=>fetch('/api/state').then((r)=>r.json()).then((s)=>s.products[0].stock));assert.equal(stockBefore-stockAfter,1);
- await page.click('[data-page="expenses"]');await page.waitForSelector('[data-reverse-expense="1"]');
- page.on('dialog',(dialog)=>dialog.accept());await page.click('[data-reverse-expense="1"]');await page.fill('#expenseReverseForm input[name="date"]','2026-09-10');await page.fill('#expenseReverseForm input[name="reason"]','Duplicate entry');await page.click('#expenseReverseForm button');
- await wait(()=>document.querySelector('#expensesTable').textContent.includes('Reversed: EXR-'));
- assert.deepEqual(errors,[]);
- // Phone-width workflow and retained photo crop controls.
- await page.setViewportSize({width:390,height:844});await page.click('[data-page="sale"]');await page.click('[data-scan="sale"]');await page.waitForSelector('#scanDialog[open]');assert.equal(await page.locator('#cropLeft').count(),1);
- console.log('PASS: actual page loading, preserved transaction metadata, applied-filter CSV, remote history pages, lost-response retry without duplicate stock deduction, expense reversal and mobile-width scanner dialog.');
-})().catch((e)=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();lines.close();child.kill();});
+const { chromium } = require('playwright');
+const { spawn } = require('node:child_process');
+const { createInterface } = require('node:readline');
+const { randomBytes } = require('node:crypto');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const password = randomBytes(24).toString('hex');
+const python = process.env.PYTHON_EXECUTABLE || 'python';
+const child = spawn(python, [path.join(__dirname, 'browser_fixture.py')], {
+  cwd: __dirname,
+  env: { ...process.env, ERP_TEST_PASSWORD: password },
+  stdio: ['ignore', 'pipe', 'pipe'],
+});
+const lines = createInterface({ input: child.stdout });
+let browser;
+const port = new Promise((resolve, reject) => {
+  lines.once('line', (s) => {
+    try {
+      resolve(JSON.parse(s).port);
+    } catch (e) {
+      reject(e);
+    }
+  });
+  child.once('error', reject);
+  child.once('exit', (code) => reject(Error('Fixture exited ' + code)));
+});
+(async () => {
+  const base = 'http://127.0.0.1:' + (await port);
+  browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  const wait = async (fn) => page.waitForFunction(fn);
+  await page.goto(base);
+  await wait(() => !!window.erp); // Real parser order, no eval after parsing.
+  await page.fill('#password', password);
+  await page.click('#loginForm button');
+  await page.waitForSelector('#workspace:not([hidden])');
+  await page.click('[data-page="purchase"]');
+  await page.waitForSelector('#purchaseSupplier option[value="1"]');
+  await page.selectOption('#purchaseSupplier', '1');
+  await page.selectOption('#purchasePayment', 'Bank');
+  await page.fill('#purchaseNote', 'Retain this draft');
+  await page.selectOption('#purchaseSelect', '1');
+  await page.click('[data-add="purchase"]');
+  await page.click('[data-page="inventory"]');
+  await page.click('[data-page="purchase"]');
+  await wait(() => document.querySelector('#purchaseSupplier').value === '1');
+  assert.equal(await page.inputValue('#purchaseNote'), 'Retain this draft');
+  assert.equal(await page.inputValue('#purchasePayment'), 'Bank');
+  await page.click('[data-save="purchase"]');
+  await wait(() => document.querySelector('#notice').textContent.includes('PUR-'));
+  const ref = (await page.textContent('#notice')).split('Reference: ')[1];
+  const invoice = await page.evaluate(
+    async (ref) => fetch('/api/invoice?reference=' + ref).then((r) => r.json()),
+    ref,
+  );
+  assert.equal(invoice.transaction.supplier_id, 1);
+  assert.equal(invoice.transaction.note, 'Retain this draft');
+  assert.equal(invoice.transaction.payment_method, 'Bank');
+  await page.click('[data-page="reports"]');
+  await page.waitForSelector('#reportForm');
+  await page.fill('#reportForm input[name="month"]', '2026-09');
+  await page.click('#reportForm button[type="submit"],#reportForm button:not([type])');
+  await wait(() => document.querySelector('#reportStatus').textContent.includes('2026-09-01'));
+  await page.fill('#reportForm input[name="month"]', '2026-08');
+  const csv = page.waitForResponse((r) => r.url().includes('/api/reports.csv'));
+  await page.click('#reportCsv');
+  const exported = await csv;
+  assert.equal(new URL(exported.url()).searchParams.get('month'), '2026-09');
+  await page.click('[data-page="history"]');
+  await page.waitForSelector('#historyNext:not([disabled])');
+  const before = await page.locator('#historyEnhanced tbody tr').first().textContent();
+  await page.click('#historyNext');
+  await wait(() => document.querySelector('#historyEnhanced').textContent.includes('Page 2 /'));
+  assert.notEqual(await page.locator('#historyEnhanced tbody tr').first().textContent(), before);
+  const payloads = [];
+  let abortFirst = true;
+  await page.route('**/api/transaction', async (route) => {
+    payloads.push(route.request().postDataJSON());
+    const response = await route.fetch();
+    if (abortFirst) {
+      abortFirst = false;
+      await route.abort('failed');
+    } else await route.fulfill({ response });
+  });
+  const stockBefore = await page.evaluate(async () =>
+    fetch('/api/state')
+      .then((r) => r.json())
+      .then((s) => s.products[0].stock),
+  );
+  await page.click('[data-page="sale"]');
+  await page.selectOption('#saleSelect', '1');
+  await page.click('[data-add="sale"]');
+  await page.click('[data-save="sale"]');
+  await wait(() => document.querySelector('#notice').className === 'error');
+  await page.click('[data-save="sale"]');
+  await wait(() => document.querySelector('#notice').textContent.includes('INV-'));
+  assert.equal(payloads.length, 2);
+  assert.equal(payloads[0].request_id, payloads[1].request_id);
+  const stockAfter = await page.evaluate(async () =>
+    fetch('/api/state')
+      .then((r) => r.json())
+      .then((s) => s.products[0].stock),
+  );
+  assert.equal(stockBefore - stockAfter, 1);
+  await page.click('[data-page="expenses"]');
+  await page.waitForSelector('[data-reverse-expense="1"]');
+  page.on('dialog', (dialog) => dialog.accept());
+  await page.click('[data-reverse-expense="1"]');
+  await page.fill('#expenseReverseForm input[name="date"]', '2026-09-10');
+  await page.fill('#expenseReverseForm input[name="reason"]', 'Duplicate entry');
+  await page.click('#expenseReverseForm button');
+  await wait(() => document.querySelector('#expensesTable').textContent.includes('Reversed: EXR-'));
+  assert.deepEqual(errors, []);
+  // Phone-width workflow and retained photo crop controls.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.click('[data-page="sale"]');
+  await page.click('[data-scan="sale"]');
+  await page.waitForSelector('#scanDialog[open]');
+  assert.equal(await page.locator('#cropLeft').count(), 1);
+  console.log(
+    'PASS: actual page loading, preserved transaction metadata, applied-filter CSV, remote history pages, lost-response retry without duplicate stock deduction, expense reversal and mobile-width scanner dialog.',
+  );
+})()
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    if (browser) await browser.close();
+    lines.close();
+    child.kill();
+  });

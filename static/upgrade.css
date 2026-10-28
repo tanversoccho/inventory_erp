@@ -1,41 +1,320 @@
-:root { --surface:#fff; --ink:#183d39; --muted:#5d7067; --line:#dce4de; --bg:#f5f7f2; --accent:#dce6a5; }
-:root[data-theme="dark"] { --surface:#1d2932; --ink:#e8f0f3; --muted:#b7c7d0; --line:#40505c; --bg:#111a22; }
-aside,.panel,.metric,dialog,input,select { background:var(--surface); color:var(--ink); border-color:var(--line); }
-nav button { color:var(--muted); } nav button.active { background:var(--bg); color:var(--ink); }
-.hero { background:var(--green); }.hero button { background:var(--accent); color:#152a23; }
-.logo { gap:10px; overflow-wrap:anywhere; }.logo img { width:50px; height:50px; object-fit:contain; }.brand-mark { color:var(--green); background:var(--accent); border-radius:12px; padding:8px 14px; }
-.asset-preview { display:block; max-width:200px; height:90px; object-fit:contain; margin:12px 0; }
-.page > .panel { margin-bottom:22px; }.settings-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:0 20px; align-items:end; }
-fieldset { border:1px solid var(--line); border-radius:10px; margin:20px 0; padding:16px; } legend { font-weight:700; padding:0 8px; }
-input[type="checkbox"] { width:auto; display:block; height:25px; } input[type="color"] { height:46px; padding:4px; }
-.report-filters { display:flex; flex-wrap:wrap; align-items:end; gap:12px; }.report-filters label { flex:1 1 150px; margin:0; }.report-filters button { margin-top:10px; }
-#reports .metrics { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); margin-top:22px; }.metric strong { overflow-wrap:anywhere; }
-.table-tools { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin:12px 0; }.table-tools input { max-width:300px; }
-.bar-chart { max-height:370px; overflow:auto; }.bar-row { display:grid; grid-template-columns:110px minmax(40px,1fr) 110px; gap:12px; align-items:center; margin:14px 0; font-size:11px; }.bar-row span { overflow-wrap:anywhere; }.bar-row i { display:block; min-height:12px; background:var(--green); border-radius:3px; }.bar-row b { text-align:right; }
-#reportPrintHeader { margin:24px 0; }#adminDialog { width:min(800px,96vw); }.invoice h2 { margin-top:15px; }
-:focus-visible { outline:3px solid var(--green); outline-offset:3px; }
-[data-density="compact"] td { padding:8px 10px; }[data-density="compact"] .panel { padding:16px; }
-.high-contrast { --muted:var(--ink); --line:var(--ink); }.high-contrast button { border:1px solid currentColor; }
-.reduced-motion *, .reduced-motion *::before,.reduced-motion *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
-.nav-collapsed aside { width:150px; padding:24px 12px; }.nav-collapsed main { margin-left:150px; }.nav-collapsed aside .logo span,.nav-collapsed aside>small { display:none; }
-aside { overflow-y:auto; }nav { gap:4px; }nav button { padding:10px; }.logo { margin-bottom:20px; }#toggleNav { margin-bottom:10px; }
-@media(max-width:650px){.nav-collapsed aside{width:100%;padding:18px;}.nav-collapsed main{margin-left:0;}.nav-collapsed nav{display:none;}.report-filters label{flex-basis:42%;}.bar-row{grid-template-columns:75px minmax(20px,1fr) 90px;gap:6px;}.toolbar{flex-wrap:wrap}.toolbar select{min-width:100%;}.settings-grid{grid-template-columns:1fr;}fieldset{padding:10px;}}
+:root {
+  --surface: #fff;
+  --ink: #183d39;
+  --muted: #5d7067;
+  --line: #dce4de;
+  --bg: #f5f7f2;
+  --accent: #dce6a5;
+}
+:root[data-theme="dark"] {
+  --surface: #1d2932;
+  --ink: #e8f0f3;
+  --muted: #b7c7d0;
+  --line: #40505c;
+  --bg: #111a22;
+}
+aside,
+.panel,
+.metric,
+dialog,
+input,
+select {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+nav button {
+  color: var(--muted);
+}
+nav button.active {
+  background: var(--bg);
+  color: var(--ink);
+}
+.hero {
+  background: var(--green);
+}
+.hero button {
+  background: var(--accent);
+  color: #152a23;
+}
+.logo {
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+.logo img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+.brand-mark {
+  color: var(--green);
+  background: var(--accent);
+  border-radius: 12px;
+  padding: 8px 14px;
+}
+.asset-preview {
+  display: block;
+  max-width: 200px;
+  height: 90px;
+  object-fit: contain;
+  margin: 12px 0;
+}
+.page > .panel {
+  margin-bottom: 22px;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0 20px;
+  align-items: end;
+}
+fieldset {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin: 20px 0;
+  padding: 16px;
+}
+legend {
+  font-weight: 700;
+  padding: 0 8px;
+}
+input[type="checkbox"] {
+  width: auto;
+  display: block;
+  height: 25px;
+}
+input[type="color"] {
+  height: 46px;
+  padding: 4px;
+}
+.report-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.report-filters label {
+  flex: 1 1 150px;
+  margin: 0;
+}
+.report-filters button {
+  margin-top: 10px;
+}
+#reports .metrics {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-top: 22px;
+}
+.metric strong {
+  overflow-wrap: anywhere;
+}
+.table-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0;
+}
+.table-tools input {
+  max-width: 300px;
+}
+.bar-chart {
+  max-height: 370px;
+  overflow: auto;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: 110px minmax(40px, 1fr) 110px;
+  gap: 12px;
+  align-items: center;
+  margin: 14px 0;
+  font-size: 11px;
+}
+.bar-row span {
+  overflow-wrap: anywhere;
+}
+.bar-row i {
+  display: block;
+  min-height: 12px;
+  background: var(--green);
+  border-radius: 3px;
+}
+.bar-row b {
+  text-align: right;
+}
+#reportPrintHeader {
+  margin: 24px 0;
+}
+#adminDialog {
+  width: min(800px, 96vw);
+}
+.invoice h2 {
+  margin-top: 15px;
+}
+:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 3px;
+}
+[data-density="compact"] td {
+  padding: 8px 10px;
+}
+[data-density="compact"] .panel {
+  padding: 16px;
+}
+.high-contrast {
+  --muted: var(--ink);
+  --line: var(--ink);
+}
+.high-contrast button {
+  border: 1px solid currentColor;
+}
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+.nav-collapsed aside {
+  width: 150px;
+  padding: 24px 12px;
+}
+.nav-collapsed main {
+  margin-left: 150px;
+}
+.nav-collapsed aside .logo span,
+.nav-collapsed aside > small {
+  display: none;
+}
+aside {
+  overflow-y: auto;
+}
+nav {
+  gap: 4px;
+}
+nav button {
+  padding: 10px;
+}
+.logo {
+  margin-bottom: 20px;
+}
+#toggleNav {
+  margin-bottom: 10px;
+}
+@media (max-width: 650px) {
+  .nav-collapsed aside {
+    width: 100%;
+    padding: 18px;
+  }
+  .nav-collapsed main {
+    margin-left: 0;
+  }
+  .nav-collapsed nav {
+    display: none;
+  }
+  .report-filters label {
+    flex-basis: 42%;
+  }
+  .bar-row {
+    grid-template-columns: 75px minmax(20px, 1fr) 90px;
+    gap: 6px;
+  }
+  .toolbar {
+    flex-wrap: wrap;
+  }
+  .toolbar select {
+    min-width: 100%;
+  }
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  fieldset {
+    padding: 10px;
+  }
+}
 @media print {
-  :root { --bg:#fff;--surface:#fff;--ink:#000;--muted:#333;--line:#ccc; }
-  body.print-report aside,body.print-report header,body.print-report footer,body.print-report #notice,body.print-report #reportForm,body.print-report #reportStatus,body.print-report .table-tools,body.print-report .toolbar,body.print-report #reports>.panel {display:none!important;}
-  body.print-report main {margin:0;padding:0;max-width:none;}body.print-report #reportOutput .grid {display:block;}body.print-report .panel,body.print-report .metric{break-inside:avoid;}
-  body.print-report .bar-chart {max-height:none;overflow:visible;}body.print-report .table-wrap{overflow:visible;}
-  body.print-invoice #workspace,body.print-invoice #login,body.print-invoice #adminDialog button {display:none!important;}
-  body.print-invoice #adminDialog {display:block;position:static;max-height:none;width:100%;border:0;overflow:visible;}
-  body.print-invoice #adminDialog::backdrop{background:white;}
+  :root {
+    --bg: #fff;
+    --surface: #fff;
+    --ink: #000;
+    --muted: #333;
+    --line: #ccc;
+  }
+  body.print-report aside,
+  body.print-report header,
+  body.print-report footer,
+  body.print-report #notice,
+  body.print-report #reportForm,
+  body.print-report #reportStatus,
+  body.print-report .table-tools,
+  body.print-report .toolbar,
+  body.print-report #reports > .panel {
+    display: none !important;
+  }
+  body.print-report main {
+    margin: 0;
+    padding: 0;
+    max-width: none;
+  }
+  body.print-report #reportOutput .grid {
+    display: block;
+  }
+  body.print-report .panel,
+  body.print-report .metric {
+    break-inside: avoid;
+  }
+  body.print-report .bar-chart {
+    max-height: none;
+    overflow: visible;
+  }
+  body.print-report .table-wrap {
+    overflow: visible;
+  }
+  body.print-invoice #workspace,
+  body.print-invoice #login,
+  body.print-invoice #adminDialog button {
+    display: none !important;
+  }
+  body.print-invoice #adminDialog {
+    display: block;
+    position: static;
+    max-height: none;
+    width: 100%;
+    border: 0;
+    overflow: visible;
+  }
+  body.print-invoice #adminDialog::backdrop {
+    background: white;
+  }
 }
 
-#reportPrintTable { display:none; }
-@media print { body.print-report #reportTableOutput { display:none; } body.print-report #reportPrintTable { display:block; } }
+#reportPrintTable {
+  display: none;
+}
+@media print {
+  body.print-report #reportTableOutput {
+    display: none;
+  }
+  body.print-report #reportPrintTable {
+    display: block;
+  }
+}
 
 /* Settlements remain separate from revenue/profit metrics. */
-.settlement-entry { margin:16px 0; }
-.settlement-entry legend { font-weight:700; }
-#payments .metrics,#settlementMetrics .metrics { grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); }
-#payments > .panel { margin:22px 0; }
-.settlement-print { border-top:1px solid var(--line); padding-top:12px; }
+.settlement-entry {
+  margin: 16px 0;
+}
+.settlement-entry legend {
+  font-weight: 700;
+}
+#payments .metrics,
+#settlementMetrics .metrics {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+#payments > .panel {
+  margin: 22px 0;
+}
+.settlement-print {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}

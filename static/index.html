@@ -1,59 +1,140 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1"
+    />
     <title>Inventory & Sales</title>
-    <link rel="stylesheet" href="/style.css">
-    <link rel="stylesheet" href="/upgrade.css">
-    <meta name="description" content="Inventory workspace">
-    <link id="brandFavicon" rel="icon" href="data:,">
+    <link
+      rel="stylesheet"
+      href="/style.css"
+    />
+    <link
+      rel="stylesheet"
+      href="/upgrade.css"
+    />
+    <meta
+      name="description"
+      content="Inventory workspace"
+    />
+    <link
+      id="brandFavicon"
+      rel="icon"
+      href="data:,"
+    />
   </head>
-  <body> 
-    <div id="login" class="login">
-      <form id="loginForm" class="panel">
-        <div class="logo" data-brand="login"></div>
+  <body>
+    <div
+      id="login"
+      class="login"
+    >
+      <form
+        id="loginForm"
+        class="panel"
+      >
+        <div
+          class="logo"
+          data-brand="login"
+        ></div>
         <h1 id="brandWelcome">Inventory workspace</h1>
-        <p>Sign in to your inventory workspace.</p> 
-        <label>Password<input id="password" type="password" required autocomplete="current-password"></label>
-        <button>Open workspace →</button> 
-        <p id="loginError" role="alert"></p>
+        <p>Sign in to your inventory workspace.</p>
+        <label
+          >Password<input
+            id="password"
+            type="password"
+            required
+            autocomplete="current-password"
+        /></label>
+        <button>Open workspace →</button>
+        <p
+          id="loginError"
+          role="alert"
+        ></p>
       </form>
-    </div> 
-    <div id="workspace" hidden>
+    </div>
+    <div
+      id="workspace"
+      hidden
+    >
       <aside>
-        <div class="logo" data-brand="navigation"></div>
+        <div
+          class="logo"
+          data-brand="navigation"
+        ></div>
         <small>BUSINESS WORKSPACE</small>
-        <button type="button" id="toggleNav" aria-label="Toggle navigation">☰ Menu</button>
+        <button
+          type="button"
+          id="toggleNav"
+          aria-label="Toggle navigation"
+        >
+          ☰ Menu
+        </button>
         <nav>
-          <button data-page="dashboard" class="active">◫ &nbsp; Overview</button>
+          <button
+            data-page="dashboard"
+            class="active"
+          >
+            ◫ &nbsp; Overview
+          </button>
           <button data-page="inventory">▦ &nbsp; Inventory</button>
           <button data-page="purchase">↓ &nbsp; Purchase stock</button>
           <button data-page="sale">↗ &nbsp; New sale</button>
           <button data-page="history">◷ &nbsp; Transactions</button>
-        <button data-page="reports">Reports & analytics</button>
-          <button data-page="expenses">Expenses</button><button data-page="suppliers">Suppliers</button>
-          <button data-page="customers">Customers</button><button data-page="payments">Payments & dues</button><button data-page="settings">Settings</button></nav>
+          <button data-page="reports">Reports & analytics</button>
+          <button data-page="expenses">Expenses</button
+          ><button data-page="suppliers">Suppliers</button>
+          <button data-page="customers">Customers</button
+          ><button data-page="payments">Payments & dues</button
+          ><button data-page="settings">Settings</button>
+        </nav>
         <div class="aside-bottom">
           <p>● &nbsp; SQLite · Laptop database</p>
           <button id="backup">↓ Download backup</button>
           <button id="logout">Sign out</button>
         </div>
-      </aside> 
+      </aside>
       <main>
         <header>
           <div>
             <small>YOUR BUSINESS AT A GLANCE</small>
             <h1 id="pageTitle">Overview</h1>
           </div>
-          <div><button type="button" id="pairPhone">Pair phone scanner</button> <button type="button" id="scannerReady" hidden>Ready for next scan</button><p id="scannerLaptopStatus" role="status"></p><div id="today"></div></div>
+          <div>
+            <button
+              type="button"
+              id="pairPhone"
+            >
+              Pair phone scanner
+            </button>
+            <button
+              type="button"
+              id="scannerReady"
+              hidden
+            >
+              Ready for next scan
+            </button>
+            <p
+              id="scannerLaptopStatus"
+              role="status"
+            ></p>
+            <div id="today"></div>
+          </div>
         </header>
-        <div id="notice" role="status" hidden></div>
-        <section id="dashboard" class="page">
+        <div
+          id="notice"
+          role="status"
+          hidden
+        ></div>
+        <section
+          id="dashboard"
+          class="page"
+        >
           <div class="hero">
             <div>
               <small>KEEP BUSINESS MOVING</small>
-              <h2>A clearer view of<br>every product.</h2>
+              <h2>A clearer view of<br />every product.</h2>
               <p>Track what comes in. Know what goes out.</p>
               <button data-go="sale">Create a sale ↗</button>
             </div>
@@ -62,12 +143,20 @@
               <p>SCAN. STOCK. SELL.</p>
             </div>
           </div>
-          <div id="metrics" class="metrics"></div>
+          <div
+            id="metrics"
+            class="metrics"
+          ></div>
           <div class="grid">
             <article class="panel">
               <div class="section-head">
                 <h2>Recent activity</h2>
-                <button data-go="history" class="text">View all →</button>
+                <button
+                  data-go="history"
+                  class="text"
+                >
+                  View all →
+                </button>
               </div>
               <div id="recent"></div>
             </article>
@@ -77,11 +166,21 @@
               <div id="alerts"></div>
             </article>
           </div>
-          <p class="muted">Overview: all-time totals. Reports: monthly and custom periods. Gross profit excludes operating expenses and taxes.</p>
+          <p class="muted">
+            Overview: all-time totals. Reports: monthly and custom periods. Gross profit excludes
+            operating expenses and taxes.
+          </p>
         </section>
-        <section id="inventory" class="page" hidden>
+        <section
+          id="inventory"
+          class="page"
+          hidden
+        >
           <div class="toolbar">
-            <input id="search" placeholder="Search product name, code or category">
+            <input
+              id="search"
+              placeholder="Search product name, code or category"
+            />
             <button id="addProduct">+ Add product</button>
           </div>
           <article class="panel">
@@ -97,20 +196,56 @@
                     <th>Status / actions</th>
                   </tr>
                 </thead>
-                <tbody id="products">
-                </tbody>
+                <tbody id="products"></tbody>
               </table>
             </div>
           </article>
-        </section> 
-        <section id="reports" class="page" hidden></section>
-        <section id="expenses" class="page" hidden></section><section id="suppliers" class="page" hidden></section>
-        <section id="customers" class="page" hidden></section>
-        <section id="payments" class="page" hidden></section>
-        <section id="settings" class="page" hidden></section>
-        <section id="purchase" class="page" hidden></section>
-        <section id="sale" class="page" hidden></section> 
-        <section id="history" class="page" hidden>
+        </section>
+        <section
+          id="reports"
+          class="page"
+          hidden
+        ></section>
+        <section
+          id="expenses"
+          class="page"
+          hidden
+        ></section>
+        <section
+          id="suppliers"
+          class="page"
+          hidden
+        ></section>
+        <section
+          id="customers"
+          class="page"
+          hidden
+        ></section>
+        <section
+          id="payments"
+          class="page"
+          hidden
+        ></section>
+        <section
+          id="settings"
+          class="page"
+          hidden
+        ></section>
+        <section
+          id="purchase"
+          class="page"
+          hidden
+        ></section>
+        <section
+          id="sale"
+          class="page"
+          hidden
+        ></section>
+        <section
+          id="history"
+          class="page"
+          hidden
+        >
           <div class="toolbar">
             <p>Complete purchase and sales ledger</p>
             <button id="export">Export CSV ↓</button>
@@ -128,103 +263,334 @@
                     <th>Total</th>
                   </tr>
                 </thead>
-                <tbody id="ledger"> </tbody>
+                <tbody id="ledger"></tbody>
               </table>
             </div>
           </article>
-        </section> 
+        </section>
         <footer><b id="brandFooter"></b><span id="brandSubtitle"></span></footer>
       </main>
-    </div> 
+    </div>
     <dialog id="productDialog">
       <form id="productForm">
         <div class="section-head">
           <h2>Add product</h2>
-          <button type="button" class="text" id="closeProduct">✕</button>
+          <button
+            type="button"
+            class="text"
+            id="closeProduct"
+          >
+            ✕
+          </button>
         </div>
-        <label>Barcode / QR value (optional)
+        <label
+          >Barcode / QR value (optional)
           <div class="inline">
-            <input name="code" id="productCode" placeholder="Leave blank for manual entry" maxlength="200">
-            <button type="button" id="scanProduct">Photo scan</button>
+            <input
+              name="code"
+              id="productCode"
+              placeholder="Leave blank for manual entry"
+              maxlength="200"
+            />
+            <button
+              type="button"
+              id="scanProduct"
+            >
+              Photo scan
+            </button>
           </div>
         </label>
-        <button type="button" id="onlineLookup">Look up product online</button>
-        <p id="productLookup" class="muted" role="status"></p>
-        <label>Product name<input id="productName" name="name" required maxlength="200"></label>
-        <label>Category<input name="category" maxlength="100"></label>
+        <button
+          type="button"
+          id="onlineLookup"
+        >
+          Look up product online
+        </button>
+        <p
+          id="productLookup"
+          class="muted"
+          role="status"
+        ></p>
+        <label
+          >Product name<input
+            id="productName"
+            name="name"
+            required
+            maxlength="200"
+        /></label>
+        <label
+          >Category<input
+            name="category"
+            maxlength="100"
+        /></label>
         <div class="two">
-          <label>Selling price (BDT)<input name="price" type="number" min="0" step="0.01" required></label>
-          <label>Low-stock level<input name="minimum" type="number" min="0" step="1" value="5" required></label>
+          <label
+            >Selling price (BDT)<input
+              name="price"
+              type="number"
+              min="0"
+              step="0.01"
+              required
+          /></label>
+          <label
+            >Low-stock level<input
+              name="minimum"
+              type="number"
+              min="0"
+              step="1"
+              value="5"
+              required
+          /></label>
         </div>
         <div class="two">
-          <label>Starting quantity<input name="quantity" type="number" min="0" step="1" value="0" required></label>
-          <label>Unit purchase cost (BDT)<input name="cost" type="number" min="0" step="0.01" value="0" required></label>
+          <label
+            >Starting quantity<input
+              name="quantity"
+              type="number"
+              min="0"
+              step="1"
+              value="0"
+              required
+          /></label>
+          <label
+            >Unit purchase cost (BDT)<input
+              name="cost"
+              type="number"
+              min="0"
+              step="0.01"
+              value="0"
+              required
+          /></label>
         </div>
         <p class="muted">A barcode is optional. Starting stock is recorded as a purchase.</p>
-        <button type="submit" id="saveProduct">Save product</button>
+        <button
+          type="submit"
+          id="saveProduct"
+        >
+          Save product
+        </button>
       </form>
-    </dialog> 
-    <dialog id="scanDialog" class="crop-dialog" aria-labelledby="cropTitle"> 
+    </dialog>
+    <dialog
+      id="scanDialog"
+      class="crop-dialog"
+      aria-labelledby="cropTitle"
+    >
       <div class="section-head">
         <div>
           <small>PHOTO → CROP → SCAN</small>
           <h2 id="cropTitle">Scan a product code</h2>
         </div>
-        <button type="button" id="closeScan">✕ Close</button>
+        <button
+          type="button"
+          id="closeScan"
+        >
+          ✕ Close
+        </button>
       </div>
-      <p class="crop-help">Capture one label. Drag around the barcode or QR code, leaving a little clear space on every side.</p>
-      <button type="button" id="takePhoto">Take photo / Retake</button>
-      <input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
-      <p id="scanMessage" role="status" aria-live="polite"></p> 
-      <div id="cropEditor" hidden> 
-        <canvas id="cropCanvas" aria-label="Photo crop selector. Drag to select, or use the edge sliders below."></canvas> 
-        <div class="crop-sliders"> 
-          <label>Left edge 
+      <p class="crop-help">
+        Capture one label. Drag around the barcode or QR code, leaving a little clear space on every
+        side.
+      </p>
+      <button
+        type="button"
+        id="takePhoto"
+      >
+        Take photo / Retake
+      </button>
+      <input
+        type="file"
+        id="scanFile"
+        accept="image/*"
+        capture="environment"
+        hidden
+      />
+      <p
+        id="scanMessage"
+        role="status"
+        aria-live="polite"
+      ></p>
+      <div
+        id="cropEditor"
+        hidden
+      >
+        <canvas
+          id="cropCanvas"
+          aria-label="Photo crop selector. Drag to select, or use the edge sliders below."
+        ></canvas>
+        <div class="crop-sliders">
+          <label
+            >Left edge
             <output id="leftValue"></output>
-            <input id="cropLeft" type="range" min="0" max="1000" value="0">
-          </label> 
-          <label>Right edge 
+            <input
+              id="cropLeft"
+              type="range"
+              min="0"
+              max="1000"
+              value="0"
+            />
+          </label>
+          <label
+            >Right edge
             <output id="rightValue"></output>
-            <input id="cropRight" type="range" min="0" max="1000" value="1000">
-          </label> 
-          <label>Top edge 
+            <input
+              id="cropRight"
+              type="range"
+              min="0"
+              max="1000"
+              value="1000"
+            />
+          </label>
+          <label
+            >Top edge
             <output id="topValue"></output>
-            <input id="cropTop" type="range" min="0" max="1000" value="0">
-          </label> 
-          <label>Bottom edge
+            <input
+              id="cropTop"
+              type="range"
+              min="0"
+              max="1000"
+              value="0"
+            />
+          </label>
+          <label
+            >Bottom edge
             <output id="bottomValue"></output>
-            <input id="cropBottom" type="range" min="0" max="1000" value="1000">
-          </label> 
-        </div> 
-        <div class="crop-actions">
-          <button type="button" id="resetCrop">Reset crop</button>
-          <button type="button" id="previewCrop">Preview crop</button>
-          <button type="button" id="decodeCrop">Scan barcode</button><button type="button" id="stopPhotoScan" hidden>Stop scanning</button>
+            <input
+              id="cropBottom"
+              type="range"
+              min="0"
+              max="1000"
+              value="1000"
+            />
+          </label>
         </div>
-        <section id="cropPreviewArea" hidden>
+        <div class="crop-actions">
+          <button
+            type="button"
+            id="resetCrop"
+          >
+            Reset crop
+          </button>
+          <button
+            type="button"
+            id="previewCrop"
+          >
+            Preview crop
+          </button>
+          <button
+            type="button"
+            id="decodeCrop"
+          >
+            Scan barcode</button
+          ><button
+            type="button"
+            id="stopPhotoScan"
+            hidden
+          >
+            Stop scanning
+          </button>
+        </div>
+        <section
+          id="cropPreviewArea"
+          hidden
+        >
           <h3>Selected crop</h3>
           <canvas id="cropPreview"></canvas>
           <p id="cropResolution"></p>
-        </section> 
-      </div> 
-      <p id="scanResult" hidden></p>
-      <button type="button" id="useScanResult" hidden>Use decoded value →</button> 
-      <div id="reader" hidden aria-hidden="true"></div> 
-    </dialog> 
-    <dialog id="adminDialog"><div id="adminDialogContent"></div><button type="button" id="closeAdmin">Close</button></dialog>
-    <section id="phoneScanner" class="panel" hidden style="max-width:640px;margin:20px auto">
-      <h1>Phone barcode scanner</h1><p>Scan here; review product details on your laptop.</p>
-      <p id="phoneScannerStatus" role="status"></p>
-      <button type="button" id="phoneTakePhoto">Scan a barcode</button>
-      <form id="phoneSendForm"><label>Or enter barcode digits<input id="phoneCode" maxlength="512" autocomplete="off"></label><button id="phoneSend" type="submit">Send to laptop</button></form>
+        </section>
+      </div>
+      <p
+        id="scanResult"
+        hidden
+      ></p>
+      <button
+        type="button"
+        id="useScanResult"
+        hidden
+      >
+        Use decoded value →
+      </button>
+      <div
+        id="reader"
+        hidden
+        aria-hidden="true"
+      ></div>
+    </dialog>
+    <dialog id="adminDialog">
+      <div id="adminDialogContent"></div>
+      <button
+        type="button"
+        id="closeAdmin"
+      >
+        Close
+      </button>
+    </dialog>
+    <section
+      id="phoneScanner"
+      class="panel"
+      hidden
+      style="max-width: 640px; margin: 20px auto"
+    >
+      <h1>Phone barcode scanner</h1>
+      <p>Scan here; review product details on your laptop.</p>
+      <p
+        id="phoneScannerStatus"
+        role="status"
+      ></p>
+      <button
+        type="button"
+        id="phoneTakePhoto"
+      >
+        Scan a barcode
+      </button>
+      <form id="phoneSendForm">
+        <label
+          >Or enter barcode digits<input
+            id="phoneCode"
+            maxlength="512"
+            autocomplete="off" /></label
+        ><button
+          id="phoneSend"
+          type="submit"
+        >
+          Send to laptop
+        </button>
+      </form>
       <p>Keep this page open. One scan at a time; the laptop confirms receipt.</p>
     </section>
-    <dialog id="pairScannerDialog"><h2>Pair phone scanner</h2>
+    <dialog id="pairScannerDialog">
+      <h2>Pair phone scanner</h2>
       <p>Connect both devices to the same Wi-Fi. Choose where barcodes should go.</p>
-      <label>Destination<select id="pairTarget"><option value="product">Add product</option><option value="sale">Sale</option><option value="purchase">Purchase</option></select></label>
-      <button type="button" id="startPairing">Create pairing QR</button>
-      <div id="pairQr"></div><p id="pairLink"></p><p id="pairStatus" role="status"></p>
-      <button type="button" id="stopPairing">Disconnect scanner</button><button type="button" id="closePairing">Close</button>
+      <label
+        >Destination<select id="pairTarget">
+          <option value="product">Add product</option>
+          <option value="sale">Sale</option>
+          <option value="purchase">Purchase</option>
+        </select></label
+      >
+      <button
+        type="button"
+        id="startPairing"
+      >
+        Create pairing QR
+      </button>
+      <div id="pairQr"></div>
+      <p id="pairLink"></p>
+      <p
+        id="pairStatus"
+        role="status"
+      ></p>
+      <button
+        type="button"
+        id="stopPairing"
+      >
+        Disconnect scanner</button
+      ><button
+        type="button"
+        id="closePairing"
+      >
+        Close
+      </button>
     </dialog>
     <script src="/pair-qr.js"></script>
     <script src="/scanner-sync.js"></script>
@@ -233,6 +599,5 @@
     <script src="/payments-ui.js"></script>
     <script src="/photo-decoder.js"></script>
     <script src="/app.js"></script>
-  
   </body>
 </html>

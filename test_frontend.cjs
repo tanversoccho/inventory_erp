@@ -1,48 +1,149 @@
 // Optional jsdom integration test against an isolated server, never a real business database.
-const {JSDOM,VirtualConsole}=require('jsdom');
-const fs=require('node:fs'),assert=require('node:assert/strict'),path=require('node:path');
-const base=process.env.TEST_URL;
-if(!base||!process.env.TEST_PASSWORD)throw Error('Set TEST_URL and TEST_PASSWORD for a disposable fixture');
-const errors=[],vc=new VirtualConsole();vc.on('jsdomError',(e)=>errors.push(e.message));
-let cookie='';
-const dom=new JSDOM(fs.readFileSync(path.join(__dirname,'static/index.html'),'utf8'),{url:base,runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:vc});
-const w=dom.window,d=w.document;
-w.matchMedia=()=>({matches:false,addEventListener(){}});w.confirm=()=>true;w.print=()=>{};
-w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
-w.HTMLDialogElement.prototype.close=function(){this.open=false;};
-w.URL.createObjectURL=()=> 'blob:test';w.URL.revokeObjectURL=()=>{};
-w.fetch=async(url,opts={})=>{const res=await fetch(new URL(url,base),{...opts,headers:{...(opts.headers||{}),Cookie:cookie}});if(res.headers.get('set-cookie'))cookie=res.headers.get('set-cookie').split(';')[0];return res;};
-w.addEventListener('error',(e)=>errors.push(e.error?.stack||e.message));
-async function until(fn,label){for(let i=0;i<160;i++){if(fn())return;await new Promise((r)=>setTimeout(r,25));}throw Error('Timeout '+label+' '+errors.join('\n')+' NOTICE='+d.querySelector('#notice').textContent+' LOGIN='+d.querySelector('#loginError').textContent);}
-const click=(s)=>d.querySelector(s).click();
-const submit=(f)=>f.dispatchEvent(new w.SubmitEvent('submit',{cancelable:true,submitter:f.querySelector('button')}));
-(async()=>{
- w.eval(fs.readFileSync(path.join(__dirname,'static/upgrade.js'),'utf8'));w.eval(fs.readFileSync(path.join(__dirname,'static/app.js'),'utf8'));
- await until(()=>d.title.includes('Soccho'),'public branding');
- d.querySelector('#password').value=process.env.TEST_PASSWORD;submit(d.querySelector('#loginForm'));
- await until(()=>!d.querySelector('#workspace').hidden,'login');
- click('[data-page="reports"]');await until(()=>d.querySelector('#reportTableOutput table'),'reports');
- assert(d.querySelector('#reportOutput').textContent.includes('Current stock value'));
- d.querySelector('#reportForm').elements.month.value='2026-01';submit(d.querySelector('#reportForm'));
- await until(()=>d.querySelector('#reportStatus').textContent.includes('2026-01-01'),'filter');
- click('[data-page="settings"]');await until(()=>d.querySelector('#settingsForm'),'settings');
- const settings=d.querySelector('#settingsForm');settings.elements.app_name.value='Runtime Test Brand';settings.elements.theme.value='dark';submit(settings);
- await until(()=>d.querySelector('#settingsStatus').textContent.includes('Saved'),'save settings');
- assert(d.title.includes('Runtime Test Brand'));assert.equal(d.documentElement.dataset.theme,'dark');
- click('[data-page="expenses"]');await until(()=>d.querySelector('#expenseForm'),'expenses');
- const expense=d.querySelector('#expenseForm');expense.elements.category.value='Rent';expense.elements.amount.value='10';submit(expense);
- await until(()=>d.querySelector('#expensesTable').textContent.includes('Rent'),'expense saved');
- click('[data-page="suppliers"]');await until(()=>d.querySelector('#supplierForm'),'suppliers');
- const supplier=d.querySelector('#supplierForm');supplier.elements.name.value='Fixture Supplier';submit(supplier);
- await until(()=>d.querySelector('#suppliersTable').textContent.includes('Fixture Supplier'),'supplier saved');
- click('[data-page="inventory"]');click('[data-edit-product]');assert(d.querySelector('#adminDialog').open);click('#closeAdmin');
- click('[data-page="history"]');click('#openCorrection');assert(d.querySelector('#correctionForm'));click('#closeAdmin');
- click('[data-page="purchase"]');d.querySelector('#purchaseSelect').value='1';click('[data-add="purchase"]');
- click('[data-save="purchase"]');await until(()=>d.querySelector('#notice').textContent.includes('PUR-'),'purchase committed');
- click('[data-page="sale"]');d.querySelector('#saleSelect').value='1';click('[data-add="sale"]');
- d.querySelector('#saleNote').value='DOM test sale';click('[data-save="sale"]');
- await until(()=>d.querySelector('#notice').textContent.includes('INV-'),'sale committed');
- click('[data-page="history"]');await until(()=>d.querySelector('#historyEnhanced [data-invoice]'),'remote invoice references');click('#historyEnhanced [data-invoice]');await until(()=>d.querySelector('.invoice'),'invoice');click('#closeAdmin');
- click('[data-page="sale"]');assert(d.querySelector('#salePayment'));click('[data-scan="sale"]');assert(d.querySelector('#scanDialog').open);assert(d.querySelector('#cropLeft'));click('#closeScan');
- assert.equal(errors.length,0,errors.join('\n'));console.log('PASS: branding, login, filtered reports, runtime settings/theme, expense and supplier saves, product edit, corrections, sale metadata and crop scanner DOM.');await new Promise((r)=>setTimeout(r,250));dom.window.close();
-})().catch((e)=>{console.error(e);dom.window.close();process.exitCode=1;});
+const { JSDOM, VirtualConsole } = require('jsdom');
+const fs = require('node:fs'),
+  assert = require('node:assert/strict'),
+  path = require('node:path');
+const base = process.env.TEST_URL;
+if (!base || !process.env.TEST_PASSWORD)
+  throw Error('Set TEST_URL and TEST_PASSWORD for a disposable fixture');
+const errors = [],
+  vc = new VirtualConsole();
+vc.on('jsdomError', (e) => errors.push(e.message));
+let cookie = '';
+const dom = new JSDOM(fs.readFileSync(path.join(__dirname, 'static/index.html'), 'utf8'), {
+  url: base,
+  runScripts: 'outside-only',
+  pretendToBeVisual: true,
+  virtualConsole: vc,
+});
+const w = dom.window,
+  d = w.document;
+w.matchMedia = () => ({ matches: false, addEventListener() {} });
+w.confirm = () => true;
+w.print = () => {};
+w.HTMLDialogElement.prototype.showModal = function () {
+  this.open = true;
+};
+w.HTMLDialogElement.prototype.close = function () {
+  this.open = false;
+};
+w.URL.createObjectURL = () => 'blob:test';
+w.URL.revokeObjectURL = () => {};
+w.fetch = async (url, opts = {}) => {
+  const res = await fetch(new URL(url, base), {
+    ...opts,
+    headers: { ...(opts.headers || {}), Cookie: cookie },
+  });
+  if (res.headers.get('set-cookie')) cookie = res.headers.get('set-cookie').split(';')[0];
+  return res;
+};
+w.addEventListener('error', (e) => errors.push(e.error?.stack || e.message));
+async function until(fn, label) {
+  for (let i = 0; i < 160; i++) {
+    if (fn()) return;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  throw Error(
+    'Timeout ' +
+      label +
+      ' ' +
+      errors.join('\n') +
+      ' NOTICE=' +
+      d.querySelector('#notice').textContent +
+      ' LOGIN=' +
+      d.querySelector('#loginError').textContent,
+  );
+}
+const click = (s) => d.querySelector(s).click();
+const submit = (f) =>
+  f.dispatchEvent(
+    new w.SubmitEvent('submit', { cancelable: true, submitter: f.querySelector('button') }),
+  );
+(async () => {
+  w.eval(fs.readFileSync(path.join(__dirname, 'static/upgrade.js'), 'utf8'));
+  w.eval(fs.readFileSync(path.join(__dirname, 'static/app.js'), 'utf8'));
+  await until(() => d.title.includes('Soccho'), 'public branding');
+  d.querySelector('#password').value = process.env.TEST_PASSWORD;
+  submit(d.querySelector('#loginForm'));
+  await until(() => !d.querySelector('#workspace').hidden, 'login');
+  click('[data-page="reports"]');
+  await until(() => d.querySelector('#reportTableOutput table'), 'reports');
+  assert(d.querySelector('#reportOutput').textContent.includes('Current stock value'));
+  d.querySelector('#reportForm').elements.month.value = '2026-01';
+  submit(d.querySelector('#reportForm'));
+  await until(() => d.querySelector('#reportStatus').textContent.includes('2026-01-01'), 'filter');
+  click('[data-page="settings"]');
+  await until(() => d.querySelector('#settingsForm'), 'settings');
+  const settings = d.querySelector('#settingsForm');
+  settings.elements.app_name.value = 'Runtime Test Brand';
+  settings.elements.theme.value = 'dark';
+  submit(settings);
+  await until(
+    () => d.querySelector('#settingsStatus').textContent.includes('Saved'),
+    'save settings',
+  );
+  assert(d.title.includes('Runtime Test Brand'));
+  assert.equal(d.documentElement.dataset.theme, 'dark');
+  click('[data-page="expenses"]');
+  await until(() => d.querySelector('#expenseForm'), 'expenses');
+  const expense = d.querySelector('#expenseForm');
+  expense.elements.category.value = 'Rent';
+  expense.elements.amount.value = '10';
+  submit(expense);
+  await until(
+    () => d.querySelector('#expensesTable').textContent.includes('Rent'),
+    'expense saved',
+  );
+  click('[data-page="suppliers"]');
+  await until(() => d.querySelector('#supplierForm'), 'suppliers');
+  const supplier = d.querySelector('#supplierForm');
+  supplier.elements.name.value = 'Fixture Supplier';
+  submit(supplier);
+  await until(
+    () => d.querySelector('#suppliersTable').textContent.includes('Fixture Supplier'),
+    'supplier saved',
+  );
+  click('[data-page="inventory"]');
+  click('[data-edit-product]');
+  assert(d.querySelector('#adminDialog').open);
+  click('#closeAdmin');
+  click('[data-page="history"]');
+  click('#openCorrection');
+  assert(d.querySelector('#correctionForm'));
+  click('#closeAdmin');
+  click('[data-page="purchase"]');
+  d.querySelector('#purchaseSelect').value = '1';
+  click('[data-add="purchase"]');
+  click('[data-save="purchase"]');
+  await until(() => d.querySelector('#notice').textContent.includes('PUR-'), 'purchase committed');
+  click('[data-page="sale"]');
+  d.querySelector('#saleSelect').value = '1';
+  click('[data-add="sale"]');
+  d.querySelector('#saleNote').value = 'DOM test sale';
+  click('[data-save="sale"]');
+  await until(() => d.querySelector('#notice').textContent.includes('INV-'), 'sale committed');
+  click('[data-page="history"]');
+  await until(
+    () => d.querySelector('#historyEnhanced [data-invoice]'),
+    'remote invoice references',
+  );
+  click('#historyEnhanced [data-invoice]');
+  await until(() => d.querySelector('.invoice'), 'invoice');
+  click('#closeAdmin');
+  click('[data-page="sale"]');
+  assert(d.querySelector('#salePayment'));
+  click('[data-scan="sale"]');
+  assert(d.querySelector('#scanDialog').open);
+  assert(d.querySelector('#cropLeft'));
+  click('#closeScan');
+  assert.equal(errors.length, 0, errors.join('\n'));
+  console.log(
+    'PASS: branding, login, filtered reports, runtime settings/theme, expense and supplier saves, product edit, corrections, sale metadata and crop scanner DOM.',
+  );
+  await new Promise((r) => setTimeout(r, 250));
+  dom.window.close();
+})().catch((e) => {
+  console.error(e);
+  dom.window.close();
+  process.exitCode = 1;
+});
